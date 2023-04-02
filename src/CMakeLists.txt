@@ -1,12 +1,8 @@
-add_library(spark STATIC
-        spark.h
-        spark.cpp)
-
-# Core
-add_subdirectory(sp_core)
+set(SP_ALL_SOURCE_FILES spark.h spark.cpp)
 
 # Math
-add_subdirectory(sp_math)
+file(GLOB_RECURSE SP_MATH_SOURCE_FILES "math/*.h" "math/*.cpp")
+set(SP_ALL_SOURCE_FILES ${SP_ALL_SOURCE_FILES} ${SP_MATH_SOURCE_FILES})
 
-# RHI
-add_subdirectory(sp_rhi)
+add_library(spark STATIC ${SP_ALL_SOURCE_FILES})
+target_include_directories(spark PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

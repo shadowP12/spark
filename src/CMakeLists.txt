@@ -1,5 +1,9 @@
 set(SP_ALL_SOURCE_FILES spark.h spark.cpp)
 
+# Core
+file(GLOB_RECURSE SP_CORE_SOURCE_FILES "core/*.h" "core/*.cpp")
+set(SP_ALL_SOURCE_FILES ${SP_ALL_SOURCE_FILES} ${SP_CORE_SOURCE_FILES})
+
 # Math
 file(GLOB_RECURSE SP_MATH_SOURCE_FILES "math/*.h" "math/*.cpp")
 set(SP_ALL_SOURCE_FILES ${SP_ALL_SOURCE_FILES} ${SP_MATH_SOURCE_FILES})

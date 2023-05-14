@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sp_math.h"
+#include "math_define.h"
 #include <glm/glm.hpp>
 
 class BoundingBox
@@ -134,6 +134,16 @@ public:
         ret.bb_max.y = glm::max(bbox.bb_max.y, point.y);
         ret.bb_max.z = glm::max(bbox.bb_max.z, point.z);
         return ret;
+    }
+
+    void grow(float amount)
+    {
+        bb_min.x -= amount;
+        bb_min.y -= amount;
+        bb_min.z -= amount;
+        bb_max.x += amount;
+        bb_max.y += amount;
+        bb_max.z += amount;
     }
 
 public:

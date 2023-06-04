@@ -73,23 +73,16 @@ public:
         return ret;
     }
 
-    struct Corners
+    void get_corners(glm::vec3 corners[8]) const
     {
-        glm::vec3 vertices[8];
-    };
-
-    Corners get_corners() const
-    {
-        Corners corners{};
-        corners.vertices[0] = { bb_min.x, bb_min.y, bb_min.z };
-        corners.vertices[1] = { bb_max.x, bb_min.y, bb_min.z };
-        corners.vertices[2] = { bb_min.x, bb_max.y, bb_min.z };
-        corners.vertices[3] = { bb_max.x, bb_max.y, bb_min.z };
-        corners.vertices[4] = { bb_min.x, bb_min.y, bb_max.z };
-        corners.vertices[5] = { bb_max.x, bb_min.y, bb_max.z };
-        corners.vertices[6] = { bb_min.x, bb_max.y, bb_max.z };
-        corners.vertices[7] = { bb_max.x, bb_max.y, bb_max.z };
-        return corners;
+        corners[0] = { bb_min.x, bb_min.y, bb_min.z };
+        corners[1] = { bb_max.x, bb_min.y, bb_min.z };
+        corners[2] = { bb_min.x, bb_max.y, bb_min.z };
+        corners[3] = { bb_max.x, bb_max.y, bb_min.z };
+        corners[4] = { bb_min.x, bb_min.y, bb_max.z };
+        corners[5] = { bb_max.x, bb_min.y, bb_max.z };
+        corners[6] = { bb_min.x, bb_max.y, bb_max.z };
+        corners[7] = { bb_max.x, bb_max.y, bb_max.z };
     }
 
     void merge(const BoundingBox &bbox)

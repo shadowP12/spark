@@ -15,3 +15,21 @@ target_link_libraries(spark PUBLIC glm)
 add_library(rapidjson INTERFACE)
 target_include_directories(rapidjson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/extern/rapidjson/include)
 target_link_libraries(spark PUBLIC rapidjson)
+
+# glfw
+add_subdirectory(extern/glfw EXCLUDE_FROM_ALL glfw.out)
+target_link_libraries(spark PRIVATE glfw)
+
+# spirv_reflect
+add_library(spirv_reflect STATIC extern/spirv_reflect/spirv_reflect.c extern/spirv_reflect/spirv_reflect.h)
+target_include_directories(spark PUBLIC extern/spirv_reflect)
+target_link_libraries(spark PUBLIC spirv_reflect)
+
+# volk
+add_library(volk STATIC extern/volk/volk.c extern/volk/volk.h)
+target_include_directories(volk PUBLIC extern/volk)
+target_include_directories(volk PUBLIC extern/Vulkan-headers/include)
+if (WIN32)
+    target_compile_definitions(volk PRIVATE VK_USE_PLATFORM_WIN32_KHR)
+endif()
+target_link_libraries(spark PUBLIC volk)

@@ -40,7 +40,7 @@ std::string filename(const std::string& path)
     return path.substr(pos+1);
 }
 
-std::string fs_extension(const std::string& path)
+std::string extension(const std::string& path)
 {
     const std::string& name = filename(path);
     size_t pos = name.find_last_of(".");

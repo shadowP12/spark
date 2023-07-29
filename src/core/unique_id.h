@@ -26,7 +26,7 @@ public:
         return id;
     }
 
-    void free_item(const UniqueId& id)
+    void free(const UniqueId& id)
     {
         auto iter = _dict.find(id);
         if (iter != _dict.end())

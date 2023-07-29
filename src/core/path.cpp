@@ -26,4 +26,34 @@ std::string fix_path(const std::string& path)
     }
     return path;
 }
+
+std::string join(const std::string& base, const std::string& path)
+{
+    return base + "/" + path;
+}
+
+std::string filename(const std::string& path)
+{
+    size_t pos = path.find_last_of("/");
+    if (pos == std::string::npos)
+        return "";
+    return path.substr(pos+1);
+}
+
+std::string fs_extension(const std::string& path)
+{
+    const std::string& name = filename(path);
+    size_t pos = name.find_last_of(".");
+    if (pos == std::string::npos)
+        return "";
+    return name.substr(pos+1);
+}
+
+std::string parent_path(const std::string& path)
+{
+    size_t pos = path.find_last_of("/");
+    if (pos == std::string::npos)
+        return "";
+    return path.substr(0, pos);
+}
 }

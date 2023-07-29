@@ -11,6 +11,10 @@ public:
 
     ~SceneTree();
 
+    void setup() {}
+
+    void cleanup() {}
+
     Node* get_root() { return _root; }
 
 private:

@@ -9,10 +9,4 @@ public:
     RenderScene();
 
     ~RenderScene();
-
-    void create_window(int window_id, void* window);
-
-    void destroy_window(int window_id);
-
-    std::map<int, EzSwapchain> swapchains;
 };

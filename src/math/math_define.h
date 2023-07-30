@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <glm/glm.hpp>
 
 #define PI 3.14159265359f
 #define TWO_PI 6.28318530718f

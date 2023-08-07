@@ -18,7 +18,7 @@ target_link_libraries(spark PUBLIC rapidjson)
 
 # glfw
 add_subdirectory(extern/glfw EXCLUDE_FROM_ALL glfw.out)
-target_link_libraries(spark PRIVATE glfw)
+target_link_libraries(spark PUBLIC glfw)
 
 # spirv_reflect
 add_library(spirv_reflect STATIC extern/spirv_reflect/spirv_reflect.c extern/spirv_reflect/spirv_reflect.h)

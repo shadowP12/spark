@@ -1736,6 +1736,12 @@ void ez_begin_rendering(const EzRenderingInfo& rendering_info)
         color_attachment.loadOp = x.load_op;
         color_attachment.storeOp = x.store_op;
         color_attachment.clearValue = x.clear_value;
+        if (x.resolve_texture)
+        {
+            color_attachment.resolveImageView = x.resolve_texture->views[x.resolve_texture_view].handle;
+            color_attachment.resolveImageLayout = x.resolve_texture->layout;
+            color_attachment.resolveMode = x.resolve_mode;
+        }
         color_attachments.push_back(color_attachment);
     }
 

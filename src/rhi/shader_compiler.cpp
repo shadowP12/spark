@@ -27,6 +27,8 @@ void ShaderCompiler::compile_internal(const std::string& file_path, const std::v
     if (std::system(command_line.c_str()) == 0)
     {
         FileAccess* fa = FileAccess::open(out_file_path, FileAccess::READ);
+        size = fa->get_length();
+        *data = malloc(size);
         fa->get_buffer((uint8_t*)*data, size);
         delete fa;
     }

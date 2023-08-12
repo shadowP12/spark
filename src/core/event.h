@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 
-#define BIND_EVENT(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
+#define EVENT_CB(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
 typedef int EventHandle;
 

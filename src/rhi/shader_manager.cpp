@@ -25,11 +25,12 @@ EzShader ShaderManager::get_shader_internal(const std::string& file, const std::
     }
 
     auto iter = shader_dict.find(hash);
-    if (iter != shader_dict.end()) {
+    if (iter != shader_dict.end())
+    {
         return iter->second;
     }
 
-    void* data;
+    void* data = nullptr;
     uint32_t size;
     EzShader shader;
     ShaderCompiler::get()->compile(file, macros, &data, size);

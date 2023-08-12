@@ -372,6 +372,9 @@ struct EzRenderingAttachmentInfo
 {
     EzTexture texture = nullptr;
     int texture_view = 0;
+    EzTexture resolve_texture = nullptr;
+    int resolve_texture_view = 0;
+    VkResolveModeFlagBits resolve_mode = VK_RESOLVE_MODE_AVERAGE_BIT;
     VkAttachmentLoadOp load_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
     VkAttachmentStoreOp store_op = VK_ATTACHMENT_STORE_OP_STORE;
     VkClearValue clear_value{};

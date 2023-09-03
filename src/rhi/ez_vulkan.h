@@ -203,7 +203,7 @@ void ez_create_texture(const EzTextureDesc& desc, EzTexture& texture);
 
 void ez_destroy_texture(EzTexture texture);
 
-int ez_create_texture_view(EzTexture texture, VkImageViewType view_type,
+int ez_create_texture_view(EzTexture texture, VkImageViewType view_type, VkImageAspectFlags aspect_mask,
                            uint32_t base_level, uint32_t level_count,
                            uint32_t base_layer, uint32_t layer_count);
 

@@ -954,7 +954,7 @@ void ez_destroy_texture(EzTexture texture)
     delete texture;
 }
 
-int ez_create_texture_view(EzTexture texture, VkImageViewType view_type,
+int ez_create_texture_view(EzTexture texture, VkImageViewType view_type, VkImageAspectFlags aspect_mask,
                            uint32_t base_level, uint32_t level_count,
                            uint32_t base_layer, uint32_t layer_count)
 {
@@ -962,7 +962,7 @@ int ez_create_texture_view(EzTexture texture, VkImageViewType view_type,
     view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view_create_info.flags = 0;
     view_create_info.image = texture->handle;
-    view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    view_create_info.subresourceRange.aspectMask = aspect_mask;
     view_create_info.subresourceRange.baseArrayLayer = base_layer;
     view_create_info.subresourceRange.layerCount = layer_count;
     view_create_info.subresourceRange.baseMipLevel = base_level;
@@ -970,19 +970,6 @@ int ez_create_texture_view(EzTexture texture, VkImageViewType view_type,
     view_create_info.format = texture->format;
     view_create_info.viewType = view_type;
 
-    switch (view_create_info.format)
-    {
-        case VK_FORMAT_D16_UNORM:
-        case VK_FORMAT_D32_SFLOAT:
-            view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            break;
-        case VK_FORMAT_D24_UNORM_S8_UINT:
-        case VK_FORMAT_D32_SFLOAT_S8_UINT:
-            view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-            break;
-        default:
-            break;
-    }
     VkImageView image_view;
     VK_ASSERT(vkCreateImageView(ctx.device, &view_create_info, nullptr, &image_view));
 

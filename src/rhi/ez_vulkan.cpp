@@ -1877,10 +1877,28 @@ void ez_draw_indexed(uint32_t index_count, uint32_t instance_count, uint32_t ind
     vkCmdDrawIndexed(ctx.cmd, index_count, instance_count, index_offset, vertex_offset, instance_offset);
 }
 
+void ez_draw_indirect(EzBuffer buffer, uint64_t offset, uint32_t draw_count, uint32_t stride)
+{
+    ez_flush_graphics_state();
+    vkCmdDrawIndirect(ctx.cmd, buffer->handle, offset, draw_count, stride);
+}
+
+void ez_draw_indexed_indirect(EzBuffer buffer, uint64_t offset, uint32_t draw_count, uint32_t stride)
+{
+    ez_flush_graphics_state();
+    vkCmdDrawIndexedIndirect(ctx.cmd, buffer->handle, offset, draw_count, stride);
+}
+
 void ez_dispatch(uint32_t thread_group_x, uint32_t thread_group_y, uint32_t thread_group_z)
 {
     ez_flush_compute_state();
     vkCmdDispatch(ctx.cmd, thread_group_x, thread_group_y, thread_group_z);
+}
+
+void ez_dispatch_indirect(EzBuffer buffer, uint64_t offset)
+{
+    ez_flush_compute_state();
+    vkCmdDispatchIndirect(ctx.cmd, buffer->handle, offset);
 }
 
 // Barrier

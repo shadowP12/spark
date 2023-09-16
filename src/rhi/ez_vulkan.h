@@ -419,7 +419,13 @@ void ez_draw_indexed(uint32_t index_count, uint32_t index_offset, int32_t vertex
 
 void ez_draw_indexed(uint32_t index_count, uint32_t instance_count, uint32_t index_offset, int32_t vertex_offset, uint32_t instance_offset);
 
+void ez_draw_indirect(EzBuffer buffer, uint64_t offset, uint32_t draw_count, uint32_t stride);
+
+void ez_draw_indexed_indirect(EzBuffer buffer, uint64_t offset, uint32_t draw_count, uint32_t stride);
+
 void ez_dispatch(uint32_t thread_group_x, uint32_t thread_group_y, uint32_t thread_group_z);
+
+void ez_dispatch_indirect(EzBuffer buffer, uint64_t offset);
 
 // Barrier
 VkImageMemoryBarrier2 ez_image_barrier(EzSwapchain swapchain,

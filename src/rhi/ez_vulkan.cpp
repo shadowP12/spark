@@ -1829,6 +1829,14 @@ void ez_bind_texture_array(uint32_t binding, EzTexture texture, int texture_view
     binding_table.bindings[binding].images[array_idx].imageLayout = texture->layout;
 }
 
+void ez_bind_buffer(uint32_t binding, EzBuffer buffer)
+{
+    binding_table.dirty = true;
+    binding_table.bindings[binding].buffer.buffer = buffer->handle;
+    binding_table.bindings[binding].buffer.offset = 0;
+    binding_table.bindings[binding].buffer.range = buffer->size;
+}
+
 void ez_bind_buffer(uint32_t binding, EzBuffer buffer, uint64_t size, uint64_t offset)
 {
     binding_table.dirty = true;

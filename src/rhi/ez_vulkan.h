@@ -405,6 +405,8 @@ void ez_bind_texture(uint32_t binding, EzTexture texture, int texture_view);
 
 void ez_bind_texture_array(uint32_t binding, EzTexture texture, int texture_view, int array_idx);
 
+void ez_bind_buffer(uint32_t binding, EzBuffer buffer);
+
 void ez_bind_buffer(uint32_t binding, EzBuffer buffer, uint64_t size, uint64_t offset = 0);
 
 void ez_bind_sampler(uint32_t binding, EzSampler sampler);

@@ -9,17 +9,17 @@
 
 typedef int EventHandle;
 
-template<class RetType, class... Args>
+template<class... Args>
 class Event
 {
 public:
     struct EventData
     {
         EventHandle handle = 0;
-        std::function<RetType(Args...)> func;
+        std::function<void(Args...)> func;
     };
 
-    EventHandle bind(std::function<RetType(Args...)> func)
+    EventHandle bind(std::function<void(Args...)> func)
     {
         EventData data;
         data.handle = ++_next_handle;
@@ -41,7 +41,7 @@ public:
         }
     }
 
-    void dispatch(Args... args)
+    void broadcast(Args... args)
     {
         if (_event_datas.size() <= 0)
             return;

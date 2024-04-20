@@ -53,6 +53,7 @@ struct ResourceManager
     std::deque<std::pair<VkShaderModule, uint64_t>> destroyer_shadermodules;
     std::deque<std::pair<VkPipelineLayout, uint64_t>> destroyer_pipeline_layouts;
     std::deque<std::pair<VkPipeline, uint64_t>> destroyer_pipelines;
+    std::deque<std::pair<VkQueryPool, uint64_t>> destroyer_query_pools;
 } res_mgr;
 
 void update_res_mgr(uint64_t current_frame_count)
@@ -184,6 +185,19 @@ void update_res_mgr(uint64_t current_frame_count)
             auto item = res_mgr.destroyer_pipelines.front();
             res_mgr.destroyer_pipelines.pop_front();
             vkDestroyPipeline(ctx.device, item.first, nullptr);
+        }
+        else
+        {
+            break;
+        }
+    }
+    while (!res_mgr.destroyer_query_pools.empty())
+    {
+        if (res_mgr.destroyer_query_pools.front().second < res_mgr.frame_count)
+        {
+            auto item = res_mgr.destroyer_query_pools.front();
+            res_mgr.destroyer_query_pools.pop_front();
+            vkDestroyQueryPool(ctx.device, item.first, nullptr);
         }
         else
         {
@@ -691,6 +705,12 @@ VkDevice ez_device()
 void ez_flush()
 {
     vkDeviceWaitIdle(ctx.device);
+}
+
+// Props
+float ez_get_timestamp_period()
+{
+    return ctx.physical_device_properties.limits.timestampPeriod;
 }
 
 // Swapchain
@@ -2170,4 +2190,57 @@ void ez_pipeline_barrier(VkDependencyFlags dependency_flags,
     dependency_info.pImageMemoryBarriers = image_barriers;
 
     vkCmdPipelineBarrier2(ctx.cmd, &dependency_info);
+}
+
+void ez_create_query_pool(uint32_t query_count, VkQueryType type, EzQueryPool& query_pool)
+{
+    query_pool = new EzQueryPool_T();
+    query_pool->type = type;
+    query_pool->query_count = query_count;
+
+    VkQueryPoolCreateInfo query_pool_create_info = { VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO };
+    query_pool_create_info.queryType = type;
+    query_pool_create_info.queryCount = query_count;
+    VK_ASSERT(vkCreateQueryPool(ctx.device, &query_pool_create_info, nullptr, &query_pool->handle));
+}
+
+void ez_destroy_query_pool(EzQueryPool query_pool)
+{
+    res_mgr.destroyer_query_pools.emplace_back(query_pool->handle, ctx.frame_count);
+    delete query_pool;
+}
+
+void ez_reset_query_pool(EzQueryPool query_pool, uint32_t start_query, uint32_t query_count)
+{
+    vkCmdResetQueryPool(ctx.cmd, query_pool->handle, start_query, query_count);
+}
+
+void ez_write_timestamp(EzQueryPool query_pool, uint32_t query_index)
+{
+    vkCmdWriteTimestamp(ctx.cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, query_pool->handle, query_index);
+}
+
+void ez_get_query_pool_results(EzQueryPool query_pool,
+                               uint32_t first_query,
+                               uint32_t query_count,
+                               uint32_t data_size,
+                               void* data,
+                               uint32_t stride,
+                               VkQueryResultFlags flags)
+{
+    vkGetQueryPoolResults(ctx.device, query_pool->handle, first_query, query_count, data_size, data, stride, flags);
+}
+
+void ez_begin_debug_label(const char* label_name, const float color[4])
+{
+    VkDebugUtilsLabelEXT label = {};
+    label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+    label.pLabelName = label_name;
+    memcpy(label.color, color, 4 * sizeof(float));
+    vkCmdBeginDebugUtilsLabelEXT(ctx.cmd, &label);
+}
+
+void ez_end_debug_label()
+{
+    vkCmdEndDebugUtilsLabelEXT(ctx.cmd);
 }

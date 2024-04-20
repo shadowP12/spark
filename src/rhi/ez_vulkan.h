@@ -89,6 +89,9 @@ VkDevice ez_device();
 
 void ez_flush();
 
+// Props
+float ez_get_timestamp_period();
+
 // Swapchain
 struct EzSwapchain_T
 {
@@ -479,3 +482,31 @@ void ez_pipeline_barrier(VkDependencyFlags dependency_flags,
                          const VkBufferMemoryBarrier2* buffer_barriers,
                          size_t image_barrier_count,
                          const VkImageMemoryBarrier2* image_barriers);
+
+struct EzQueryPool_T
+{
+    VkQueryPool handle;
+    VkQueryType type;
+    uint32_t query_count;
+};
+VK_DEFINE_HANDLE(EzQueryPool)
+
+void ez_create_query_pool(uint32_t query_count, VkQueryType type, EzQueryPool& query_pool);
+
+void ez_destroy_query_pool(EzQueryPool query_pool);
+
+void ez_reset_query_pool(EzQueryPool query_pool, uint32_t start_query, uint32_t query_count);
+
+void ez_write_timestamp(EzQueryPool query_pool, uint32_t query_index);
+
+void ez_get_query_pool_results(EzQueryPool query_pool,
+                               uint32_t first_query,
+                               uint32_t query_count,
+                               uint32_t data_size,
+                               void* data,
+                               uint32_t stride,
+                               VkQueryResultFlags flags);
+
+void ez_begin_debug_label(const char* label_name, const float color[4]);
+
+void ez_end_debug_label();

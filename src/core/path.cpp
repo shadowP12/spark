@@ -56,4 +56,24 @@ std::string parent_path(const std::string& path)
         return "";
     return path.substr(0, pos);
 }
+
+std::vector<std::string> subdirs(const std::string& path)
+{
+    char delim = '/';
+    std::size_t previous = 0;
+    std::size_t current = path.find(delim);
+    std::vector<std::string> elems;
+    while (current != std::string::npos)
+    {
+        if (current > previous) {
+            elems.push_back(path.substr(0, current+1));
+        }
+        previous = current + 1;
+        current = path.find(delim, previous);
+    }
+    if (previous != path.size()) {
+        elems.push_back(path);
+    }
+    return elems;
+}
 }

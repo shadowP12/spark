@@ -1,6 +1,7 @@
 #include "file_access.h"
 #include "core/path.h"
 #ifdef _WIN32
+#include "platform/win/win_util.h"
 #include <windows.h>
 #include <errno.h>
 #include <wchar.h>
@@ -112,12 +113,7 @@ Error FileAccessWindows::_open(const std::string& in_path, int mode_flags)
         return ERR_INVALID_PARAMETER;
     }
 
-    // Convert ansi to wide
-    int count = MultiByteToWideChar(CP_ACP, 0, path.c_str(), (int)path.length(), nullptr, 0);
-    std::wstring ws_path(count, 0);
-    MultiByteToWideChar(CP_ACP, 0, path.c_str(), (int)path.length(), &ws_path[0], count);
-
-    f = _wfsopen((LPCWSTR)(ws_path.c_str()), mode_string, _SH_DENYNO);
+    f = _wfsopen((LPCWSTR)(WinUtil::convert_utf8_to_wide(path).c_str()), mode_string, _SH_DENYNO);
 
     Error err = ERR_OK;
     if (f == nullptr)

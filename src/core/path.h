@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <vector>
 #include <string>
 
 namespace Path
@@ -17,4 +18,6 @@ std::string filename(const std::string& path);
 std::string extension(const std::string& path);
 
 std::string parent_path(const std::string& path);
+
+std::vector<std::string> subdirs(const std::string& path);
 }

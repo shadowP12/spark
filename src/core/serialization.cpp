@@ -43,7 +43,7 @@ void w_vec4(rapidjson::PrettyWriter<rapidjson::StringBuffer>& writer, glm::vec4 
     writer.Double(v[0]);
     writer.Double(v[1]);
     writer.Double(v[2]);
-    writer.Double(v[4]);
+    writer.Double(v[3]);
     writer.EndArray();
 }
 

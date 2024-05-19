@@ -220,8 +220,13 @@ struct StageBufferPool
 
 void clear_stage_buffer_pool()
 {
+    stage_buffer_pool.size = 0;
+    stage_buffer_pool.offset = 0;
     if (stage_buffer_pool.current_buffer != VK_NULL_HANDLE)
+    {
         ez_destroy_buffer(stage_buffer_pool.current_buffer);
+        stage_buffer_pool.current_buffer = VK_NULL_HANDLE;
+    }
 }
 
 static const uint32_t EZ_CBV_COUNT = 15;
@@ -681,6 +686,8 @@ void ez_submit()
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin_info.pInheritanceInfo = nullptr;
     vkBeginCommandBuffer(ctx.cmd, &begin_info);
+
+    clear_stage_buffer_pool();
 
     ctx.frame_count++;
     update_res_mgr(ctx.frame_count);

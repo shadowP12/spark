@@ -2,7 +2,8 @@
 
 #include "core/event.h"
 
-class MouseEvent {
+class MouseEvent
+{
 public:
     MouseEvent() = default;
     enum class Type
@@ -23,6 +24,8 @@ public:
     Type type = Type::UNKNOWN;
 };
 
-namespace Input {
-    static Event<MouseEvent> mouse_event;
-}
+class Input
+{
+public:
+    static Event<MouseEvent>& get_mouse_event();
+};

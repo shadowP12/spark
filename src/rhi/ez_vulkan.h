@@ -311,17 +311,22 @@ struct EzMultisampleState
 #define EZ_NUM_VERTEX_ATTRIBS 8
 struct EzVertexAttrib
 {
-    bool set = false;
-    uint32_t binding = 0;
     uint32_t offset = 0;
     VkFormat format = VK_FORMAT_UNDEFINED;
 };
 
 struct EzVertexBinding
 {
-    bool set = false;
     uint32_t vertex_stride = 0;
     VkVertexInputRate vertex_rate = VK_VERTEX_INPUT_RATE_VERTEX;
+    uint32_t vertex_attrib_mask = 0;
+    EzVertexAttrib vertex_attribs[EZ_NUM_VERTEX_ATTRIBS] = {};
+};
+
+struct EzVertexLayout
+{
+    uint32_t vertex_binding_mask = 0;
+    EzVertexBinding vertex_bindings[EZ_NUM_VERTEX_BUFFERS] = {};
 };
 
 struct EzPipelineState
@@ -329,8 +334,8 @@ struct EzPipelineState
     EzShader vertex_shader = VK_NULL_HANDLE;
     EzShader fragment_shader = VK_NULL_HANDLE;
     EzShader compute_shader = VK_NULL_HANDLE;
-    EzVertexBinding vertex_bindings[EZ_NUM_VERTEX_BUFFERS] = {};
-    EzVertexAttrib vertex_attribs[EZ_NUM_VERTEX_BUFFERS][EZ_NUM_VERTEX_ATTRIBS] = {};
+    EzVertexLayout vertex_layout = {};
+    int vertex_layout_bits[EZ_NUM_VERTEX_BUFFERS] = {0, 0, 0, 0};
     EzBlendState blend_state = {};
     EzDepthState depth_state = {};
     EzStencilState stencil_state = {};
@@ -354,6 +359,8 @@ void ez_set_compute_shader(EzShader shader);
 void ez_set_vertex_binding(uint32_t binding, uint32_t stride, VkVertexInputRate rate = VK_VERTEX_INPUT_RATE_VERTEX);
 
 void ez_set_vertex_attrib(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset = 0);
+
+void ez_set_vertex_layout(const EzVertexLayout& vertex_layout);
 
 void ez_set_blend_state(const EzBlendState& blend_state);
 

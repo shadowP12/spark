@@ -1304,25 +1304,25 @@ void ez_create_graphics_pipeline(const EzPipelineState& pipeline_state, const Ez
     std::vector<VkVertexInputAttributeDescription> input_attributes;
     for (uint32_t i = 0; i < EZ_NUM_VERTEX_BUFFERS; i++)
     {
-        if (pipeline_state.vertex_bindings[i].set)
+        if (pipeline_state.vertex_layout.vertex_binding_mask & (1 << i))
         {
             input_bindings.emplace_back();
             auto& input_binding = input_bindings.back();
-            input_binding.binding = 0;
-            input_binding.inputRate = pipeline_state.vertex_bindings[i].vertex_rate;
-            input_binding.stride = pipeline_state.vertex_bindings[i].vertex_stride;
-        }
+            input_binding.binding = i;
+            input_binding.inputRate = pipeline_state.vertex_layout.vertex_bindings[i].vertex_rate;
+            input_binding.stride = pipeline_state.vertex_layout.vertex_bindings[i].vertex_stride;
 
-        for (uint32_t j = 0; j < EZ_NUM_VERTEX_ATTRIBS; j++)
-        {
-            if (pipeline_state.vertex_attribs[i][j].set)
+            for (uint32_t j = 0; j < EZ_NUM_VERTEX_ATTRIBS; j++)
             {
-                input_attributes.emplace_back();
-                auto& input_attribute = input_attributes.back();
-                input_attribute.binding = i;
-                input_attribute.location = j;
-                input_attribute.format = pipeline_state.vertex_attribs[i][j].format;
-                input_attribute.offset = pipeline_state.vertex_attribs[i][j].offset;
+                if (pipeline_state.vertex_layout.vertex_bindings[i].vertex_attrib_mask & (1 << j))
+                {
+                    input_attributes.emplace_back();
+                    auto& input_attribute = input_attributes.back();
+                    input_attribute.binding = i;
+                    input_attribute.location = j;
+                    input_attribute.format = pipeline_state.vertex_layout.vertex_bindings[i].vertex_attribs[j].format;
+                    input_attribute.offset = pipeline_state.vertex_layout.vertex_bindings[i].vertex_attribs[j].offset;
+                }
             }
         }
     }
@@ -1526,20 +1526,17 @@ std::size_t ez_get_graphics_pipeline_hash(const EzPipelineState& pipeline_state,
     hash_combine(hash, pipeline_state.vertex_shader);
     hash_combine(hash, pipeline_state.fragment_shader);
 
+    hash_combine(hash, pipeline_state.vertex_layout.vertex_binding_mask);
     for (uint32_t i = 0; i < EZ_NUM_VERTEX_BUFFERS; i++)
     {
-        hash_combine(hash, pipeline_state.vertex_bindings[i].set);
-        hash_combine(hash, pipeline_state.vertex_bindings[i].vertex_stride);
-        hash_combine(hash, pipeline_state.vertex_bindings[i].vertex_rate);
-    }
-    for (uint32_t i = 0; i < EZ_NUM_VERTEX_BUFFERS; i++)
-    {
+        hash_combine(hash, pipeline_state.vertex_layout.vertex_bindings[i].vertex_stride);
+        hash_combine(hash, pipeline_state.vertex_layout.vertex_bindings[i].vertex_rate);
+
+        hash_combine(hash, pipeline_state.vertex_layout.vertex_bindings[i].vertex_attrib_mask);
         for (uint32_t j = 0; j < EZ_NUM_VERTEX_ATTRIBS; j++)
         {
-            hash_combine(hash, pipeline_state.vertex_attribs[i][j].set);
-            hash_combine(hash, pipeline_state.vertex_attribs[i][j].binding);
-            hash_combine(hash, pipeline_state.vertex_attribs[i][j].offset);
-            hash_combine(hash, pipeline_state.vertex_attribs[i][j].format);
+            hash_combine(hash, pipeline_state.vertex_layout.vertex_bindings[i].vertex_attribs[j].offset);
+            hash_combine(hash, pipeline_state.vertex_layout.vertex_bindings[i].vertex_attribs[j].format);
         }
     }
 
@@ -1685,16 +1682,21 @@ void ez_set_compute_shader(EzShader shader)
 
 void ez_set_vertex_binding(uint32_t binding, uint32_t stride, VkVertexInputRate rate)
 {
-    ctx.pipeline_state.vertex_bindings[binding].set = true;
-    ctx.pipeline_state.vertex_bindings[binding].vertex_stride = stride;
-    ctx.pipeline_state.vertex_bindings[binding].vertex_rate = rate;
+    ctx.pipeline_state.vertex_layout.vertex_bindings[binding].vertex_stride = stride;
+    ctx.pipeline_state.vertex_layout.vertex_bindings[binding].vertex_rate = rate;
+    ctx.pipeline_state.vertex_layout.vertex_binding_mask |= 1 << binding;
 }
 
 void ez_set_vertex_attrib(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset)
 {
-    ctx.pipeline_state.vertex_attribs[binding][location].set = true;
-    ctx.pipeline_state.vertex_attribs[binding][location].format = format;
-    ctx.pipeline_state.vertex_attribs[binding][location].offset = offset;
+    ctx.pipeline_state.vertex_layout.vertex_bindings[binding].vertex_attribs[location].format = format;
+    ctx.pipeline_state.vertex_layout.vertex_bindings[binding].vertex_attribs[location].offset = offset;
+    ctx.pipeline_state.vertex_layout.vertex_bindings[binding].vertex_attrib_mask |= 1 << location;
+}
+
+void ez_set_vertex_layout(const EzVertexLayout& vertex_layout)
+{
+    ctx.pipeline_state.vertex_layout = vertex_layout;
 }
 
 void ez_set_blend_state(const EzBlendState& blend_state)

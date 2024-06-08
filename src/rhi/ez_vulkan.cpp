@@ -382,7 +382,6 @@ void flush_binding_table()
 void ez_create_compute_pipeline(const EzPipelineState& pipeline_state, EzPipeline& pipeline);
 void ez_create_graphics_pipeline(const EzPipelineState& pipeline_state, const EzRenderingInfo& rendering_info, EzPipeline& pipeline);
 void ez_destroy_pipeline(EzPipeline pipeline);
-uint32_t ez_get_format_stride(VkFormat format);
 
 #ifdef VK_DEBUG
 VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_messenger_cb(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,

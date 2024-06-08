@@ -89,6 +89,8 @@ VkDevice ez_device();
 
 void ez_flush();
 
+uint32_t ez_get_format_stride(VkFormat format);
+
 // Props
 float ez_get_timestamp_period();
 

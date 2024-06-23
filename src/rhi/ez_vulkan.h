@@ -323,12 +323,24 @@ struct EzVertexBinding
     VkVertexInputRate vertex_rate = VK_VERTEX_INPUT_RATE_VERTEX;
     uint32_t vertex_attrib_mask = 0;
     EzVertexAttrib vertex_attribs[EZ_NUM_VERTEX_ATTRIBS] = {};
+
+    void set_attrib(int slot, const EzVertexAttrib& attrib)
+    {
+        vertex_attrib_mask |= 1 << slot;
+        vertex_attribs[slot] = attrib;
+    }
 };
 
 struct EzVertexLayout
 {
     uint32_t vertex_binding_mask = 0;
     EzVertexBinding vertex_bindings[EZ_NUM_VERTEX_BUFFERS] = {};
+
+    void set_binding(int slot, const EzVertexBinding& binding)
+    {
+        vertex_binding_mask |= 1 << slot;
+        vertex_bindings[slot] = binding;
+    }
 };
 
 struct EzPipelineState

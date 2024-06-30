@@ -309,10 +309,11 @@ struct EzMultisampleState
     VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
 };
 
-#define EZ_NUM_VERTEX_BUFFERS 4
+#define EZ_NUM_VERTEX_BUFFERS 8
 #define EZ_NUM_VERTEX_ATTRIBS 8
 struct EzVertexAttrib
 {
+    uint32_t binding = 0;
     uint32_t offset = 0;
     VkFormat format = VK_FORMAT_UNDEFINED;
 };
@@ -321,26 +322,14 @@ struct EzVertexBinding
 {
     uint32_t vertex_stride = 0;
     VkVertexInputRate vertex_rate = VK_VERTEX_INPUT_RATE_VERTEX;
-    uint32_t vertex_attrib_mask = 0;
-    EzVertexAttrib vertex_attribs[EZ_NUM_VERTEX_ATTRIBS] = {};
-
-    void set_attrib(int slot, const EzVertexAttrib& attrib)
-    {
-        vertex_attrib_mask |= 1 << slot;
-        vertex_attribs[slot] = attrib;
-    }
 };
 
 struct EzVertexLayout
 {
     uint32_t vertex_binding_mask = 0;
     EzVertexBinding vertex_bindings[EZ_NUM_VERTEX_BUFFERS] = {};
-
-    void set_binding(int slot, const EzVertexBinding& binding)
-    {
-        vertex_binding_mask |= 1 << slot;
-        vertex_bindings[slot] = binding;
-    }
+    uint32_t vertex_attrib_mask = 0;
+    EzVertexAttrib vertex_attribs[EZ_NUM_VERTEX_ATTRIBS] = {};
 };
 
 struct EzPipelineState
@@ -349,7 +338,6 @@ struct EzPipelineState
     EzShader fragment_shader = VK_NULL_HANDLE;
     EzShader compute_shader = VK_NULL_HANDLE;
     EzVertexLayout vertex_layout = {};
-    int vertex_layout_bits[EZ_NUM_VERTEX_BUFFERS] = {0, 0, 0, 0};
     EzBlendState blend_state = {};
     EzDepthState depth_state = {};
     EzStencilState stencil_state = {};
@@ -419,9 +407,9 @@ void ez_set_scissor(int32_t left, int32_t top, int32_t right, int32_t bottom);
 
 void ez_set_viewport(float x, float y, float w, float h, float min_depth = 0.0f, float max_depth = 1.0f);
 
-void ez_bind_vertex_buffer(EzBuffer vertex_buffer, uint64_t offset = 0);
+void ez_bind_vertex_buffer(uint32_t binding, EzBuffer vertex_buffer, uint64_t offset = 0);
 
-void ez_bind_vertex_buffers(uint32_t count, EzBuffer* vertex_buffers, const uint64_t* offsets);
+void ez_bind_vertex_buffers(uint32_t first_binding, uint32_t binding_count, EzBuffer* vertex_buffers, const uint64_t* offsets = nullptr);
 
 void ez_bind_index_buffer(EzBuffer index_buffer, VkIndexType type, uint64_t offset = 0);
 

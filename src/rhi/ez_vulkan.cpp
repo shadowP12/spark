@@ -1310,19 +1310,19 @@ void ez_create_graphics_pipeline(const EzPipelineState& pipeline_state, const Ez
             input_binding.binding = i;
             input_binding.inputRate = pipeline_state.vertex_layout.vertex_bindings[i].vertex_rate;
             input_binding.stride = pipeline_state.vertex_layout.vertex_bindings[i].vertex_stride;
+        }
+    }
 
-            for (uint32_t j = 0; j < EZ_NUM_VERTEX_ATTRIBS; j++)
-            {
-                if (pipeline_state.vertex_layout.vertex_bindings[i].vertex_attrib_mask & (1 << j))
-                {
-                    input_attributes.emplace_back();
-                    auto& input_attribute = input_attributes.back();
-                    input_attribute.binding = i;
-                    input_attribute.location = j;
-                    input_attribute.format = pipeline_state.vertex_layout.vertex_bindings[i].vertex_attribs[j].format;
-                    input_attribute.offset = pipeline_state.vertex_layout.vertex_bindings[i].vertex_attribs[j].offset;
-                }
-            }
+    for (uint32_t j = 0; j < EZ_NUM_VERTEX_ATTRIBS; j++)
+    {
+        if (pipeline_state.vertex_layout.vertex_attrib_mask & (1 << j))
+        {
+            input_attributes.emplace_back();
+            auto& input_attribute = input_attributes.back();
+            input_attribute.location = j;
+            input_attribute.binding = pipeline_state.vertex_layout.vertex_attribs[j].binding;
+            input_attribute.format = pipeline_state.vertex_layout.vertex_attribs[j].format;
+            input_attribute.offset = pipeline_state.vertex_layout.vertex_attribs[j].offset;
         }
     }
 
@@ -1530,13 +1530,14 @@ std::size_t ez_get_graphics_pipeline_hash(const EzPipelineState& pipeline_state,
     {
         hash_combine(hash, pipeline_state.vertex_layout.vertex_bindings[i].vertex_stride);
         hash_combine(hash, pipeline_state.vertex_layout.vertex_bindings[i].vertex_rate);
+    }
 
-        hash_combine(hash, pipeline_state.vertex_layout.vertex_bindings[i].vertex_attrib_mask);
-        for (uint32_t j = 0; j < EZ_NUM_VERTEX_ATTRIBS; j++)
-        {
-            hash_combine(hash, pipeline_state.vertex_layout.vertex_bindings[i].vertex_attribs[j].offset);
-            hash_combine(hash, pipeline_state.vertex_layout.vertex_bindings[i].vertex_attribs[j].format);
-        }
+    hash_combine(hash, pipeline_state.vertex_layout.vertex_attrib_mask);
+    for (uint32_t j = 0; j < EZ_NUM_VERTEX_ATTRIBS; j++)
+    {
+        hash_combine(hash, pipeline_state.vertex_layout.vertex_attribs[j].binding);
+        hash_combine(hash, pipeline_state.vertex_layout.vertex_attribs[j].offset);
+        hash_combine(hash, pipeline_state.vertex_layout.vertex_attribs[j].format);
     }
 
     hash_combine(hash, pipeline_state.blend_state.blend_enable);
@@ -1688,9 +1689,10 @@ void ez_set_vertex_binding(uint32_t binding, uint32_t stride, VkVertexInputRate 
 
 void ez_set_vertex_attrib(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset)
 {
-    ctx.pipeline_state.vertex_layout.vertex_bindings[binding].vertex_attribs[location].format = format;
-    ctx.pipeline_state.vertex_layout.vertex_bindings[binding].vertex_attribs[location].offset = offset;
-    ctx.pipeline_state.vertex_layout.vertex_bindings[binding].vertex_attrib_mask |= 1 << location;
+    ctx.pipeline_state.vertex_layout.vertex_attribs[location].binding = binding;
+    ctx.pipeline_state.vertex_layout.vertex_attribs[location].format = format;
+    ctx.pipeline_state.vertex_layout.vertex_attribs[location].offset = offset;
+    ctx.pipeline_state.vertex_layout.vertex_attrib_mask |= 1 << location;
 }
 
 void ez_set_vertex_layout(const EzVertexLayout& vertex_layout)
@@ -1813,21 +1815,28 @@ void ez_set_viewport(float x, float y, float w, float h, float min_depth, float 
     vkCmdSetViewport(ctx.cmd, 0, 1, &viewport);
 }
 
-void ez_bind_vertex_buffer(EzBuffer vertex_buffer, uint64_t offset)
+void ez_bind_vertex_buffer(uint32_t binding, EzBuffer vertex_buffer, uint64_t offset)
 {
-    vkCmdBindVertexBuffers(ctx.cmd, 0, 1, &vertex_buffer->handle, &offset);
+    vkCmdBindVertexBuffers(ctx.cmd, binding, 1, &vertex_buffer->handle, &offset);
 }
 
-void ez_bind_vertex_buffers(uint32_t count, EzBuffer* vertex_buffers, const uint64_t* offsets)
+void ez_bind_vertex_buffers(uint32_t first_binding, uint32_t binding_count, EzBuffer* vertex_buffers, const uint64_t* offsets)
 {
     VkBuffer vk_buffers[EZ_NUM_VERTEX_BUFFERS];
     VkDeviceSize vk_offsets[EZ_NUM_VERTEX_BUFFERS];
-    for (uint32_t i = 0; i < count; ++i)
+    for (uint32_t i = 0; i < binding_count; ++i)
     {
         vk_buffers[i] = vertex_buffers[i]->handle;
-        vk_offsets[i] = offsets[i];
+        if (offsets)
+        {
+            vk_offsets[i] = offsets[i];
+        }
+        else
+        {
+            vk_offsets[i] = 0;
+        }
     }
-    vkCmdBindVertexBuffers(ctx.cmd, 0, count, vk_buffers, vk_offsets);
+    vkCmdBindVertexBuffers(ctx.cmd, first_binding, binding_count, vk_buffers, vk_offsets);
 }
 
 void ez_bind_index_buffer(EzBuffer index_buffer, VkIndexType type, uint64_t offset)

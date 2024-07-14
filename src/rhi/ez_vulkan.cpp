@@ -356,6 +356,7 @@ void flush_binding_table()
         {
             case VK_DESCRIPTOR_TYPE_SAMPLER:
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
             case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
             {
                 write.pImageInfo = binding_table.bindings[binding].images.data();

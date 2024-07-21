@@ -85,7 +85,7 @@ public:
         corners[7] = { bb_max.x, bb_max.y, bb_max.z };
     }
 
-    void merge(const BoundingBox &bbox)
+    void merge(const BoundingBox& bbox)
     {
         bb_min.x = glm::min(bb_min.x, bbox.bb_min.x);
         bb_min.y = glm::min(bb_min.y, bbox.bb_min.y);
@@ -105,7 +105,7 @@ public:
         bb_max.z = glm::max(bb_max.z, point.z);
     }
 
-    static BoundingBox merge(const BoundingBox &bbox1, const BoundingBox &bbox2)
+    static BoundingBox merge(const BoundingBox& bbox1, const BoundingBox& bbox2)
     {
         BoundingBox ret;
         ret.bb_min.x = glm::min(bbox1.bb_min.x, bbox2.bb_min.x);
@@ -117,7 +117,7 @@ public:
         return ret;
     }
 
-    static BoundingBox merge(const BoundingBox &bbox, const glm::vec3 &point)
+    static BoundingBox merge(const BoundingBox& bbox, const glm::vec3& point)
     {
         BoundingBox ret;
         ret.bb_min.x = glm::min(bbox.bb_min.x, point.x);

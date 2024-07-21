@@ -9,3 +9,9 @@
 #define INV_TWO_PI 0.15915494309f
 #define INF std::numeric_limits<float>::infinity()
 #define NEG_INF -INF
+
+enum ClockDirection
+{
+    CLOCKWISE,
+    COUNTERCLOCKWISE
+};

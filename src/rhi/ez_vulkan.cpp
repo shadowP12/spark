@@ -880,6 +880,11 @@ void ez_unmap_memory(EzBuffer buffer)
     vkUnmapMemory(ctx.device, buffer->memory);
 }
 
+void ez_clear_buffer(EzBuffer buffer, uint32_t size, uint32_t offset)
+{
+    vkCmdFillBuffer(ctx.cmd, buffer->handle, offset, size, 0);
+}
+
 void ez_copy_buffer(EzBuffer src_buffer, EzBuffer dst_buffer, VkBufferCopy range)
 {
     vkCmdCopyBuffer(ctx.cmd, src_buffer->handle, dst_buffer->handle, 1, &range);

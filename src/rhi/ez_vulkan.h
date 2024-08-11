@@ -154,6 +154,8 @@ void ez_map_memory(EzBuffer buffer, uint32_t size, uint32_t offset, void** memor
 
 void ez_unmap_memory(EzBuffer buffer);
 
+void ez_clear_buffer(EzBuffer buffer, uint32_t size, uint32_t offset);
+
 void ez_copy_buffer(EzBuffer src_buffer, EzBuffer dst_buffer, VkBufferCopy range);
 
 void ez_update_buffer(EzBuffer buffer, uint32_t size, uint32_t offset, void* data);

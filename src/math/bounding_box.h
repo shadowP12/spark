@@ -1,6 +1,7 @@
 #pragma once
 
 #include "math_define.h"
+#include "transform_util.h"
 #include <glm/glm.hpp>
 
 class BoundingBox
@@ -137,6 +138,22 @@ public:
         bb_max.x += amount;
         bb_max.y += amount;
         bb_max.z += amount;
+    }
+
+    BoundingBox transform(const glm::mat4 m) const
+    {
+        glm::vec3 new_bb_min = glm::vec3(INF, INF, INF);
+        glm::vec3 new_bb_max = glm::vec3(NEG_INF, NEG_INF, NEG_INF);
+
+        glm::vec3 corners[8];
+        get_corners(corners);
+        for (int i = 0; i < 8; i++)
+        {
+            glm::vec3 p = TransformUtil::transform_point(corners[i], m);
+            new_bb_min = glm::min(new_bb_min, p);
+            new_bb_max = glm::max(new_bb_max, p);
+        }
+        return BoundingBox(new_bb_min, new_bb_max);
     }
 
 public:

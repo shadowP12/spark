@@ -288,10 +288,6 @@ void init_descriptor_pool()
     pool_sizes[7].descriptorCount = EZ_SAMPLER_COUNT * max_sets;
     pool_size_count++;
 
-    pool_sizes[8].type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-    pool_sizes[8].descriptorCount = EZ_SRV_COUNT * max_sets;
-    pool_size_count++;
-
     VkDescriptorPoolCreateInfo pool_create_info = {};
     pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool_create_info.poolSizeCount = pool_size_count;
@@ -473,7 +469,7 @@ void ez_init()
     VkApplicationInfo app_info = {};
     app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     app_info.pEngineName = "vulkan";
-    app_info.apiVersion = VK_API_VERSION_1_3;
+    app_info.apiVersion = VK_API_VERSION_1_4;
 
     VkInstanceCreateInfo instance_create_info = {};
     instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

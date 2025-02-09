@@ -168,9 +168,7 @@ struct EzStageAllocation
 EzStageAllocation ez_alloc_stage_buffer(size_t size);
 
 // Texture
-typedef int EzTextureView;
-
-struct EzTextureInternalView
+struct EzTextureView
 {
     VkImageView handle;
     VkImageSubresourceRange subresource_range;
@@ -189,7 +187,7 @@ struct EzTexture_T
     VkAccessFlags2 access_mask = 0;
     VkPipelineStageFlags2 stage_mask = 0;
     VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
-    std::vector<EzTextureInternalView> views;
+    std::vector<EzTextureView> views;
 };
 VK_DEFINE_HANDLE(EzTexture)
 
@@ -444,22 +442,6 @@ void ez_dispatch(uint32_t thread_group_x, uint32_t thread_group_y, uint32_t thre
 void ez_dispatch_indirect(EzBuffer buffer, uint64_t offset);
 
 // Barrier
-VkImageMemoryBarrier2 ez_image_barrier(EzSwapchain swapchain,
-                                       VkPipelineStageFlags2 stage_mask,
-                                       VkAccessFlags2 access_mask,
-                                       VkImageLayout layout,
-                                       VkImageAspectFlags aspect_mask);
-
-VkImageMemoryBarrier2 ez_image_barrier(EzTexture texture,
-                                       VkPipelineStageFlags2 stage_mask,
-                                       VkAccessFlags2 access_mask,
-                                       VkImageLayout layout,
-                                       VkImageAspectFlags aspect_mask);
-
-VkBufferMemoryBarrier2 ez_buffer_barrier(EzBuffer buffer,
-                                        VkPipelineStageFlags2 stage_mask,
-                                        VkAccessFlags2 access_mask);
-
 enum EzResourceState
 {
     EZ_RESOURCE_STATE_UNDEFINED = 0,
@@ -487,6 +469,22 @@ VkImageMemoryBarrier2 ez_image_barrier(EzSwapchain swapchain, EzResourceState re
 VkImageMemoryBarrier2 ez_image_barrier(EzTexture texture, EzResourceState resource_state);
 
 VkBufferMemoryBarrier2 ez_buffer_barrier(EzBuffer buffer, EzResourceState resource_state);
+
+VkImageMemoryBarrier2 ez_image_barrier(EzSwapchain swapchain,
+                                       VkPipelineStageFlags2 stage_mask,
+                                       VkAccessFlags2 access_mask,
+                                       VkImageLayout layout,
+                                       VkImageAspectFlags aspect_mask);
+
+VkImageMemoryBarrier2 ez_image_barrier(EzTexture texture,
+                                       VkPipelineStageFlags2 stage_mask,
+                                       VkAccessFlags2 access_mask,
+                                       VkImageLayout layout,
+                                       VkImageAspectFlags aspect_mask);
+
+VkBufferMemoryBarrier2 ez_buffer_barrier(EzBuffer buffer,
+                                        VkPipelineStageFlags2 stage_mask,
+                                        VkAccessFlags2 access_mask);
 
 void ez_pipeline_barrier(VkDependencyFlags dependency_flags,
                          size_t buffer_barrier_count,

@@ -1001,10 +1001,10 @@ int ez_create_texture_view(EzTexture texture, VkImageViewType view_type, VkImage
     VkImageView image_view;
     VK_ASSERT(vkCreateImageView(ctx.device, &view_create_info, nullptr, &image_view));
 
-    EzTextureInternalView internal_view{};
-    internal_view.handle = image_view;
-    internal_view.subresource_range = view_create_info.subresourceRange;
-    texture->views.push_back(internal_view);
+    EzTextureView view{};
+    view.handle = image_view;
+    view.subresource_range = view_create_info.subresourceRange;
+    texture->views.push_back(view);
     return int(texture->views.size()) - 1;
 }
 

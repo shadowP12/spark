@@ -1988,8 +1988,8 @@ VkImageMemoryBarrier2 ez_image_barrier(EzTexture texture,
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
     barrier.srcStageMask = texture->stage_mask;
     barrier.srcAccessMask = texture->access_mask;
-    barrier.dstStageMask = texture->stage_mask;
-    barrier.dstAccessMask = texture->access_mask;
+    barrier.dstStageMask = stage_mask;
+    barrier.dstAccessMask = access_mask;
     barrier.oldLayout = texture->layout;
     barrier.newLayout = layout;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

@@ -21,7 +21,6 @@ public:
 
     BoundingBox(const glm::vec3& p1, const glm::vec3& p2)
     {
-        glm::max(1, 5);
         bb_min = glm::vec3(glm::min(p1.x, p2.x), glm::min(p1.y, p2.y), glm::min(p1.z, p2.z));
         bb_max = glm::vec3(glm::max(p1.x, p2.x), glm::max(p1.y, p2.y), glm::max(p1.z, p2.z));
     }

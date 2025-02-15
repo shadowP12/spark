@@ -5,7 +5,19 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
+#if defined(_WIN32)
+#define NOMINMAX
+#endif
+
+#define VK_NO_PROTOTYPES
+#define VMA_STATIC_VULKAN_FUNCTIONS 1
 #include <volk.h>
+#include "vk_mem_alloc.h"
+
+#if defined(_WIN32)
+#undef GetObject
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <set>
@@ -134,7 +146,7 @@ struct EzBuffer_T
 {
     size_t size;
     VkBuffer handle;
-    VkDeviceMemory memory;
+    VmaAllocation allocation = VK_NULL_HANDLE;
     VkAccessFlags2 access_mask = 0;
     VkPipelineStageFlags2 stage_mask = 0;
 };
@@ -144,13 +156,13 @@ struct EzBufferDesc
 {
     size_t size;
     VkBufferUsageFlags usage;
-    VkMemoryPropertyFlags memory_flags;
+    VmaMemoryUsage memory_usage;
 };
 void ez_create_buffer(const EzBufferDesc& desc, EzBuffer& buffer);
 
 void ez_destroy_buffer(EzBuffer buffer);
 
-void ez_map_memory(EzBuffer buffer, uint32_t size, uint32_t offset, void** memory_ptr);
+void ez_map_memory(EzBuffer buffer, void** memory_ptr);
 
 void ez_unmap_memory(EzBuffer buffer);
 
@@ -183,7 +195,7 @@ struct EzTexture_T
     uint32_t layers;
     VkFormat format;
     VkImage handle;
-    VkDeviceMemory memory;
+    VmaAllocation allocation = VK_NULL_HANDLE;
     VkAccessFlags2 access_mask = 0;
     VkPipelineStageFlags2 stage_mask = 0;
     VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;

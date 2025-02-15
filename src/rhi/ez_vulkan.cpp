@@ -1,4 +1,7 @@
 #include "ez_vulkan.h"
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -38,14 +41,15 @@ struct Context
     EzRenderingInfo rendering_info = {};
     EzPipeline pipeline = VK_NULL_HANDLE;
     std::unordered_map<std::size_t, EzPipeline> pipeline_cache;
+    VmaAllocator allocator = VK_NULL_HANDLE;
 } ctx;
 
 struct ResourceManager
 {
     uint64_t frame_count = 0;
-    std::deque<std::pair<std::pair<VkImage, VkDeviceMemory>, uint64_t>> destroyer_images;
+    std::deque<std::pair<std::pair<VkImage, VmaAllocation>, uint64_t>> destroyer_images;
     std::deque<std::pair<VkImageView, uint64_t>> destroyer_imageviews;
-    std::deque<std::pair<std::pair<VkBuffer, VkDeviceMemory>, uint64_t>> destroyer_buffers;
+    std::deque<std::pair<std::pair<VkBuffer, VmaAllocation>, uint64_t>> destroyer_buffers;
     std::deque<std::pair<VkSampler, uint64_t>> destroyer_samplers;
     std::deque<std::pair<VkDescriptorPool, uint64_t>> destroyer_descriptor_pools;
     std::deque<std::pair<VkDescriptorSetLayout, uint64_t>> destroyer_descriptor_set_layouts;
@@ -65,8 +69,7 @@ void update_res_mgr(uint64_t current_frame_count)
         {
             auto item = res_mgr.destroyer_images.front();
             res_mgr.destroyer_images.pop_front();
-            vkDestroyImage(ctx.device, item.first.first, nullptr);
-            vkFreeMemory(ctx.device, item.first.second, nullptr);
+            vmaDestroyImage(ctx.allocator, item.first.first, item.first.second);
         }
         else
         {
@@ -92,8 +95,7 @@ void update_res_mgr(uint64_t current_frame_count)
         {
             auto item = res_mgr.destroyer_buffers.front();
             res_mgr.destroyer_buffers.pop_front();
-            vkDestroyBuffer(ctx.device, item.first.first, nullptr);
-            vkFreeMemory(ctx.device, item.first.second, nullptr);
+            vmaDestroyBuffer(ctx.allocator, item.first.first, item.first.second);
         }
         else
         {
@@ -386,13 +388,21 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_messenger_cb(VkDebugUtilsMessageSever
                                                         const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
                                                         void* user_data)
 {
-    if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+    if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
     {
-        VK_LOGW("Validation Error %s: %s\n", callback_data->pMessageIdName, callback_data->pMessage);
+        VK_LOGW("Validation Verbose %s: %s\n", callback_data->pMessageIdName, callback_data->pMessage);
+    }
+    else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+    {
+        VK_LOGW("Validation Info %s: %s\n", callback_data->pMessageIdName, callback_data->pMessage);
+    }
+    else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+    {
+        VK_LOGW("Validation Warning %s: %s\n", callback_data->pMessageIdName, callback_data->pMessage);
     }
     else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
     {
-        VK_LOGE("Validation Warning %s: %s\n", callback_data->pMessageIdName, callback_data->pMessage);
+        VK_LOGE("Validation Error %s: %s\n", callback_data->pMessageIdName, callback_data->pMessage);
     }
     return VK_FALSE;
 }
@@ -487,8 +497,14 @@ void ez_init()
 
 #ifdef VK_DEBUG
     VkDebugUtilsMessengerCreateInfoEXT messenger_create_info{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
-    messenger_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
-    messenger_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+    messenger_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+
+    messenger_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+
     messenger_create_info.pfnUserCallback = debug_utils_messenger_cb;
     VK_ASSERT(vkCreateDebugUtilsMessengerEXT(ctx.instance, &messenger_create_info, nullptr, &ctx.debug_messenger));
 #endif
@@ -562,10 +578,6 @@ void ez_init()
     device_required_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     device_required_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
     device_required_extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-    device_required_extensions.push_back(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
-    device_required_extensions.push_back(VK_KHR_MAINTENANCE2_EXTENSION_NAME);
-    device_required_extensions.push_back(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
-    device_required_extensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
     for (auto it = device_required_extensions.begin(); it != device_required_extensions.end(); ++it)
     {
         if (is_extension_supported(*it, device_available_extensions))
@@ -610,6 +622,17 @@ void ez_init()
     VK_ASSERT(vkBeginCommandBuffer(ctx.cmd, &begin_info));
 
     init_descriptor_pool();
+
+    // Initialize vma
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.physicalDevice = ctx.physical_device;
+    allocatorInfo.device = ctx.device;
+    allocatorInfo.instance = ctx.instance;
+    if (features_1_2.bufferDeviceAddress)
+    {
+        allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+    }
+    VK_ASSERT(vmaCreateAllocator(&allocatorInfo, &ctx.allocator));
 }
 
 void ez_terminate()
@@ -632,6 +655,7 @@ void ez_terminate()
         ctx.debug_messenger = VK_NULL_HANDLE;
     }
 #endif
+    vmaDestroyAllocator(ctx.allocator);
     vkDestroyCommandPool(ctx.device, ctx.cmd_pool, nullptr);
     vkDestroyDevice(ctx.device, nullptr);
     vkDestroyInstance(ctx.instance, nullptr);
@@ -641,16 +665,16 @@ void ez_submit()
 {
     vkEndCommandBuffer(ctx.cmd);
 
-    VkPipelineStageFlags submit_stage_mask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     VkSubmitInfo submit_info = {};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submit_info.pWaitDstStageMask = &submit_stage_mask;
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &ctx.cmd;
     if (ctx.acquire_semaphore != VK_NULL_HANDLE)
     {
+        VkPipelineStageFlags submit_stage_mask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         submit_info.waitSemaphoreCount = 1;
         submit_info.pWaitSemaphores = &ctx.acquire_semaphore;
+        submit_info.pWaitDstStageMask = &submit_stage_mask;
     }
     if (ctx.release_semaphore != VK_NULL_HANDLE)
     {
@@ -676,6 +700,7 @@ void ez_submit()
     VK_ASSERT(vkDeviceWaitIdle(ctx.device));
 
     VK_ASSERT(vkResetCommandPool(ctx.device, ctx.cmd_pool, 0));
+    VK_ASSERT(vkResetDescriptorPool(ctx.device, ctx.descriptor_pool, 0));
 
     VkCommandBufferBeginInfo begin_info = {};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -843,37 +868,31 @@ void ez_create_buffer(const EzBufferDesc& desc, EzBuffer& buffer)
     buffer = new EzBuffer_T();
     buffer->size = desc.size;
 
-    VkBufferCreateInfo buffer_create_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_create_info.size = desc.size;
-    buffer_create_info.usage = desc.usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    VK_ASSERT(vkCreateBuffer(ctx.device, &buffer_create_info, nullptr, &buffer->handle));
+    VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_info.size = desc.size;
+    buffer_info.usage = desc.usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-    VkMemoryRequirements memory_requirements;
-    vkGetBufferMemoryRequirements(ctx.device, buffer->handle, &memory_requirements);
-    uint32_t memory_type_tndex = select_memory_type(ctx.physical_device_memory_properties, memory_requirements.memoryTypeBits, desc.memory_flags);
+    VmaAllocationCreateInfo alloc_info = {};
+    alloc_info.usage = desc.memory_usage;
 
-    VkMemoryAllocateInfo allocate_info = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-    allocate_info.allocationSize = memory_requirements.size;
-    allocate_info.memoryTypeIndex = memory_type_tndex;
-    VK_ASSERT(vkAllocateMemory(ctx.device, &allocate_info, nullptr, &buffer->memory));
-    VK_ASSERT(vkBindBufferMemory(ctx.device, buffer->handle, buffer->memory, 0));
+    VK_ASSERT(vmaCreateBuffer(ctx.allocator, &buffer_info, &alloc_info, &buffer->handle, &buffer->allocation, nullptr));
 }
 
 void ez_destroy_buffer(EzBuffer buffer)
 {
-    res_mgr.destroyer_buffers.emplace_back(std::make_pair(buffer->handle, buffer->memory), ctx.frame_count);
+    res_mgr.destroyer_buffers.emplace_back(std::make_pair(buffer->handle, buffer->allocation), ctx.frame_count);
     delete buffer;
 }
 
-void ez_map_memory(EzBuffer buffer, uint32_t size, uint32_t offset, void** memory_ptr)
+void ez_map_memory(EzBuffer buffer, void** memory_ptr)
 {
-    vkMapMemory(ctx.device, buffer->memory, offset, size, 0, memory_ptr);
+    vmaMapMemory(ctx.allocator, buffer->allocation, memory_ptr);
 }
 
 void ez_unmap_memory(EzBuffer buffer)
 {
-    vkUnmapMemory(ctx.device, buffer->memory);
+    vmaUnmapMemory(ctx.allocator, buffer->allocation);
 }
 
 void ez_clear_buffer(EzBuffer buffer, uint32_t size, uint32_t offset)
@@ -890,8 +909,8 @@ void ez_update_buffer(EzBuffer buffer, uint32_t size, uint32_t offset, void* dat
 {
     EzStageAllocation alloc_info = ez_alloc_stage_buffer(size);
     void* memory_ptr = nullptr;
-    ez_map_memory(alloc_info.buffer, size, (uint32_t)alloc_info.offset, &memory_ptr);
-    memcpy(memory_ptr, data, size);
+    ez_map_memory(alloc_info.buffer, &memory_ptr);
+    memcpy((uint8_t*)memory_ptr + alloc_info.offset, data, size);
     ez_unmap_memory(alloc_info.buffer);
 
     VkBufferCopy range = {};
@@ -917,7 +936,7 @@ EzStageAllocation ez_alloc_stage_buffer(size_t size)
         EzBufferDesc buffer_desc = {};
         buffer_desc.size = stage_buffer_pool.size;
         buffer_desc.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        buffer_desc.memory_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        buffer_desc.memory_usage = VMA_MEMORY_USAGE_CPU_ONLY;
         ez_create_buffer(buffer_desc, stage_buffer_pool.current_buffer);
     }
 
@@ -940,41 +959,33 @@ void ez_create_texture(const EzTextureDesc& desc, EzTexture& texture)
     texture->format = desc.format;
     texture->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    VkImageCreateInfo image_create_info = {};
-    image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    image_create_info.imageType = desc.image_type;
-    image_create_info.format = desc.format;
-    image_create_info.extent.width = desc.width;
-    image_create_info.extent.height = desc.height;
-    image_create_info.extent.depth = desc.depth;
-    image_create_info.mipLevels = desc.levels;
-    image_create_info.arrayLayers = desc.layers;
-    image_create_info.samples = desc.samples;
-    image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    image_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    image_create_info.queueFamilyIndexCount = 0;
-    image_create_info.pQueueFamilyIndices = nullptr;
-    image_create_info.flags = 0;
-    image_create_info.usage = desc.usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    VK_ASSERT(vkCreateImage(ctx.device, &image_create_info, nullptr, &texture->handle));
+    VkImageCreateInfo image_info = {};
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.imageType = desc.image_type;
+    image_info.format = desc.format;
+    image_info.extent.width = desc.width;
+    image_info.extent.height = desc.height;
+    image_info.extent.depth = desc.depth;
+    image_info.mipLevels = desc.levels;
+    image_info.arrayLayers = desc.layers;
+    image_info.samples = desc.samples;
+    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image_info.queueFamilyIndexCount = 0;
+    image_info.pQueueFamilyIndices = nullptr;
+    image_info.flags = 0;
+    image_info.usage = desc.usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-    VkMemoryRequirements memory_requirements;
-    vkGetImageMemoryRequirements(ctx.device, texture->handle, &memory_requirements);
-    uint32_t memoryTypeIndex = select_memory_type(ctx.physical_device_memory_properties, memory_requirements.memoryTypeBits, desc.memory_flags);
+    VmaAllocationCreateInfo alloc_info = {};
+    alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-    VkMemoryAllocateInfo allocate_info = {};
-    allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocate_info.allocationSize = memory_requirements.size;
-    allocate_info.memoryTypeIndex = memoryTypeIndex;
-
-    VK_ASSERT(vkAllocateMemory(ctx.device, &allocate_info, nullptr, &texture->memory));
-    VK_ASSERT(vkBindImageMemory(ctx.device, texture->handle, texture->memory, 0));
+    VK_ASSERT(vmaCreateImage(ctx.allocator, &image_info, &alloc_info, &texture->handle, &texture->allocation, nullptr));
 }
 
 void ez_destroy_texture(EzTexture texture)
 {
-    res_mgr.destroyer_images.emplace_back(std::make_pair(texture->handle, texture->memory), ctx.frame_count);
+    res_mgr.destroyer_images.emplace_back(std::make_pair(texture->handle, texture->allocation), ctx.frame_count);
     for (auto view : texture->views)
     {
         res_mgr.destroyer_imageviews.emplace_back(view.handle, ctx.frame_count);
@@ -1034,8 +1045,8 @@ void ez_update_image(EzTexture texture, VkBufferImageCopy range, void* data)
     EzStageAllocation alloc_info = ez_alloc_stage_buffer(data_size);
 
     void* memory_ptr = nullptr;
-    ez_map_memory(alloc_info.buffer, data_size, (uint32_t)alloc_info.offset, &memory_ptr);
-    memcpy(memory_ptr, data, data_size);
+    ez_map_memory(alloc_info.buffer, &memory_ptr);
+    memcpy((uint8_t*)memory_ptr + alloc_info.offset, data, data_size);
     ez_unmap_memory(alloc_info.buffer);
 
     range.bufferOffset = alloc_info.offset;
@@ -2095,7 +2106,8 @@ VkAccessFlags ez_get_access_flags(EzResourceState state)
     }
     if (state & EZ_RESOURCE_STATE_PRESENT)
     {
-        ret |= VK_ACCESS_MEMORY_READ_BIT;
+        //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR expected accessMask are VkAccessFlags2(0).
+        //ret |= VK_ACCESS_MEMORY_READ_BIT;
     }
 
     return ret;
@@ -2165,9 +2177,6 @@ VkPipelineStageFlags ez_get_pipeline_stage_flags(VkAccessFlags access_flags)
     if ((access_flags & (VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT)) != 0)
         flags |= VK_PIPELINE_STAGE_HOST_BIT;
 
-    if (flags == 0)
-        flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-
     return flags;
 }
 
@@ -2236,7 +2245,7 @@ void ez_reset_query_pool(EzQueryPool query_pool, uint32_t start_query, uint32_t 
 
 void ez_write_timestamp(EzQueryPool query_pool, uint32_t query_index)
 {
-    vkCmdWriteTimestamp(ctx.cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, query_pool->handle, query_index);
+    vkCmdWriteTimestamp(ctx.cmd, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, query_pool->handle, query_index);
 }
 
 void ez_get_query_pool_results(EzQueryPool query_pool,

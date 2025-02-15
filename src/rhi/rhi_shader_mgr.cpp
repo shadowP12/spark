@@ -31,7 +31,7 @@ void rhi_compile_shader_internal(const std::string& file_path, const std::vector
     std::string command_line;
     command_line += glslang_validator;
     char buff[256];
-    sprintf(buff, R"( -V "%s" -o "%s")", file_path.c_str(), out_file_path.c_str());
+    sprintf(buff, R"( -V "%s" --target-env vulkan1.3 -o "%s")", file_path.c_str(), out_file_path.c_str());
     command_line += buff;
     for (const auto & macro : macros)
     {

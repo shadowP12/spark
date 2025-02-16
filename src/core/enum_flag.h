@@ -23,3 +23,9 @@
 #else
 #define SP_MAKE_ENUM_FLAG(TYPE, ENUM_TYPE)
 #endif
+
+template<typename Enum>
+constexpr bool enum_has_flags(Enum flags, Enum contains)
+{
+    return ( ( ( __underlying_type(Enum) )flags ) & ( __underlying_type(Enum) )contains ) != 0;
+}

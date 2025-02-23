@@ -7,7 +7,6 @@
 #endif
 #include <deque>
 #include <unordered_map>
-#include <spirv_reflect.h>
 
 #define EZ_MAX(a,b)            (((a) > (b)) ? (a) : (b))
 #define EZ_MIN(a,b)            (((a) < (b)) ? (a) : (b))
@@ -1107,25 +1106,24 @@ void ez_create_shader(void* data, size_t size, EzShader& shader)
     VK_ASSERT(vkCreateShaderModule(ctx.device, &shader_create_info, nullptr, &shader->handle));
 
     // Parse shader
-    SpvReflectShaderModule reflect_shader_module;
-    SpvReflectResult reflect_result = spvReflectCreateShaderModule(shader_create_info.codeSize, shader_create_info.pCode, &reflect_shader_module);
+    SpvReflectResult reflect_result = spvReflectCreateShaderModule(shader_create_info.codeSize, shader_create_info.pCode, &shader->reflect);
 
     shader->stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shader->stage_info.module = shader->handle;
     shader->stage_info.pName = "main";
-    shader->stage_info.stage = parse_shader_stage(reflect_shader_module.shader_stage);
+    shader->stage_info.stage = parse_shader_stage(shader->reflect.shader_stage);
 
     uint32_t binding_count = 0;
-    reflect_result = spvReflectEnumerateDescriptorBindings(&reflect_shader_module, &binding_count, nullptr);
+    reflect_result = spvReflectEnumerateDescriptorBindings(&shader->reflect, &binding_count, nullptr);
 
     std::vector<SpvReflectDescriptorBinding*> bindings(binding_count);
-    reflect_result = spvReflectEnumerateDescriptorBindings(&reflect_shader_module, &binding_count, bindings.data());
+    reflect_result = spvReflectEnumerateDescriptorBindings(&shader->reflect, &binding_count, bindings.data());
 
     uint32_t push_count = 0;
-    reflect_result = spvReflectEnumeratePushConstantBlocks(&reflect_shader_module, &push_count, nullptr);
+    reflect_result = spvReflectEnumeratePushConstantBlocks(&shader->reflect, &push_count, nullptr);
 
     std::vector<SpvReflectBlockVariable*> pushconstants(push_count);
-    reflect_result = spvReflectEnumeratePushConstantBlocks(&reflect_shader_module, &push_count, pushconstants.data());
+    reflect_result = spvReflectEnumeratePushConstantBlocks(&shader->reflect, &push_count, pushconstants.data());
 
     for (auto& x : pushconstants)
     {
@@ -1143,12 +1141,11 @@ void ez_create_shader(void* data, size_t size, EzShader& shader)
         descriptor.descriptorType = (VkDescriptorType)x->descriptor_type;
         shader->layout_bindings.push_back(descriptor);
     }
-
-    spvReflectDestroyShaderModule(&reflect_shader_module);
 }
 
 void ez_destroy_shader(EzShader shader)
 {
+    spvReflectDestroyShaderModule(&shader->reflect);
     res_mgr.destroyer_shadermodules.emplace_back(shader->handle, ctx.frame_count);
     delete shader;
 }

@@ -11,8 +11,9 @@
 
 #define VK_NO_PROTOTYPES
 #define VMA_STATIC_VULKAN_FUNCTIONS 1
-#include <volk.h>
 #include "vk_mem_alloc.h"
+#include <volk.h>
+#include <spirv_reflect.h>
 
 #if defined(_WIN32)
 #undef GetObject
@@ -262,6 +263,7 @@ struct EzShader_T
     VkPipelineShaderStageCreateInfo stage_info = {};
     VkPushConstantRange pushconstants = {};
     std::vector<VkDescriptorSetLayoutBinding> layout_bindings;
+    SpvReflectShaderModule reflect;
 };
 VK_DEFINE_HANDLE(EzShader)
 
@@ -481,22 +483,6 @@ VkImageMemoryBarrier2 ez_image_barrier(EzSwapchain swapchain, EzResourceState re
 VkImageMemoryBarrier2 ez_image_barrier(EzTexture texture, EzResourceState resource_state);
 
 VkBufferMemoryBarrier2 ez_buffer_barrier(EzBuffer buffer, EzResourceState resource_state);
-
-VkImageMemoryBarrier2 ez_image_barrier(EzSwapchain swapchain,
-                                       VkPipelineStageFlags2 stage_mask,
-                                       VkAccessFlags2 access_mask,
-                                       VkImageLayout layout,
-                                       VkImageAspectFlags aspect_mask);
-
-VkImageMemoryBarrier2 ez_image_barrier(EzTexture texture,
-                                       VkPipelineStageFlags2 stage_mask,
-                                       VkAccessFlags2 access_mask,
-                                       VkImageLayout layout,
-                                       VkImageAspectFlags aspect_mask);
-
-VkBufferMemoryBarrier2 ez_buffer_barrier(EzBuffer buffer,
-                                        VkPipelineStageFlags2 stage_mask,
-                                        VkAccessFlags2 access_mask);
 
 void ez_pipeline_barrier(VkDependencyFlags dependency_flags,
                          size_t buffer_barrier_count,

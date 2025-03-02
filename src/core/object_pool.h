@@ -3,6 +3,8 @@
 #include <vector>
 #include <unordered_map>
 
+#define INVALID_OBJECT_S 0
+
 template<typename T>
 class ObjectPool
 {

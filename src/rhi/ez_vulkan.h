@@ -376,6 +376,10 @@ void ez_set_vertex_binding(uint32_t binding, uint32_t stride, VkVertexInputRate 
 
 void ez_set_vertex_attrib(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset = 0);
 
+void ez_set_vertex_binding(EzVertexLayout& vertex_layout, uint32_t binding, uint32_t stride, VkVertexInputRate rate = VK_VERTEX_INPUT_RATE_VERTEX);
+
+void ez_set_vertex_attrib(EzVertexLayout& vertex_layout, uint32_t binding, uint32_t location, VkFormat format, uint32_t offset = 0);
+
 void ez_set_vertex_layout(const EzVertexLayout& vertex_layout);
 
 void ez_set_blend_state(const EzBlendState& blend_state);

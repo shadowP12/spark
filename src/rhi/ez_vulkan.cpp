@@ -1692,17 +1692,27 @@ void ez_set_compute_shader(EzShader shader)
 
 void ez_set_vertex_binding(uint32_t binding, uint32_t stride, VkVertexInputRate rate)
 {
-    ctx.pipeline_state.vertex_layout.vertex_bindings[binding].vertex_stride = stride;
-    ctx.pipeline_state.vertex_layout.vertex_bindings[binding].vertex_rate = rate;
-    ctx.pipeline_state.vertex_layout.vertex_binding_mask |= 1 << binding;
+    ez_set_vertex_binding(ctx.pipeline_state.vertex_layout, binding, stride, rate);
 }
 
 void ez_set_vertex_attrib(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset)
 {
-    ctx.pipeline_state.vertex_layout.vertex_attribs[location].binding = binding;
-    ctx.pipeline_state.vertex_layout.vertex_attribs[location].format = format;
-    ctx.pipeline_state.vertex_layout.vertex_attribs[location].offset = offset;
-    ctx.pipeline_state.vertex_layout.vertex_attrib_mask |= 1 << location;
+    ez_set_vertex_attrib(ctx.pipeline_state.vertex_layout, binding, location, format, offset);
+}
+
+void ez_set_vertex_binding(EzVertexLayout& vertex_layout, uint32_t binding, uint32_t stride, VkVertexInputRate rate)
+{
+    vertex_layout.vertex_bindings[binding].vertex_stride = stride;
+    vertex_layout.vertex_bindings[binding].vertex_rate = rate;
+    vertex_layout.vertex_binding_mask |= 1 << binding;
+}
+
+void ez_set_vertex_attrib(EzVertexLayout& vertex_layout, uint32_t binding, uint32_t location, VkFormat format, uint32_t offset)
+{
+    vertex_layout.vertex_attribs[location].binding = binding;
+    vertex_layout.vertex_attribs[location].format = format;
+    vertex_layout.vertex_attribs[location].offset = offset;
+    vertex_layout.vertex_attrib_mask |= 1 << location;
 }
 
 void ez_set_vertex_layout(const EzVertexLayout& vertex_layout)

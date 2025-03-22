@@ -866,6 +866,7 @@ void ez_create_buffer(const EzBufferDesc& desc, EzBuffer& buffer)
 {
     buffer = new EzBuffer_T();
     buffer->size = desc.size;
+    buffer->memory_usage = desc.memory_usage;
 
     VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

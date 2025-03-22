@@ -147,6 +147,7 @@ struct EzBuffer_T
 {
     size_t size;
     VkBuffer handle;
+    VmaMemoryUsage memory_usage;
     VmaAllocation allocation = VK_NULL_HANDLE;
     VkAccessFlags2 access_mask = 0;
     VkPipelineStageFlags2 stage_mask = 0;

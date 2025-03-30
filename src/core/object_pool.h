@@ -23,6 +23,8 @@ public:
 
     size_t size() const { return _objects.size(); }
 
+    T* data() { return _objects.data(); }
+
     uint32_t add()
     {
         static uint32_t next = 0;

@@ -397,7 +397,7 @@ void ez_set_primitive_topology(VkPrimitiveTopology topology);
 
 void ez_set_front_face(VkFrontFace front_face);
 
-void ez_set_cull_mode(VkCullModeFlags cull_mode);
+void ez_set_cull_mode(VkCullModeFlagBits cull_mode);
 
 struct EzRenderingAttachmentInfo
 {

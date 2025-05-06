@@ -54,6 +54,16 @@ public:
         }
     }
 
+    uint32_t get_index(uint32_t handle)
+    {
+        auto it = _lookup.find(handle);
+        if (it != _lookup.end())
+        {
+            return it->second;
+        }
+        return INVALID_OBJECT_S;
+    }
+
     T* get_obj(uint32_t handle)
     {
         auto it = _lookup.find(handle);

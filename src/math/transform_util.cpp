@@ -3,8 +3,7 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
-namespace TransformUtil
-{
+namespace TransformUtil {
 glm::mat4 remove_scale(const glm::mat4& mat)
 {
     glm::vec3 scale;

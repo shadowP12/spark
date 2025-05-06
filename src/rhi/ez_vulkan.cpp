@@ -1913,6 +1913,16 @@ void ez_bind_sampler(uint32_t binding, EzSampler sampler)
     binding_table.bindings[binding].images[0].sampler = sampler->handle;
 }
 
+void ez_bind_sampler_array(uint32_t binding, EzSampler sampler, int array_idx)
+{
+    binding_table.dirty = true;
+    for (auto i = binding_table.bindings[binding].images.size(); i < array_idx + 1; ++i)
+    {
+        binding_table.bindings[binding].images.emplace_back();
+    }
+    binding_table.bindings[binding].images[array_idx].sampler = sampler->handle;
+}
+
 void ez_push_constants(const void* data, uint32_t size, uint32_t offset)
 {
     binding_table.pushconstants_size = size;

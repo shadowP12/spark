@@ -442,6 +442,8 @@ void ez_bind_buffer(uint32_t binding, EzBuffer buffer, uint64_t size, uint64_t o
 
 void ez_bind_sampler(uint32_t binding, EzSampler sampler);
 
+void ez_bind_sampler_array(uint32_t binding, EzSampler sampler, int array_idx);
+
 void ez_push_constants(const void* data, uint32_t size, uint32_t offset);
 
 void ez_draw(uint32_t vertex_count, uint32_t vertex_offset);

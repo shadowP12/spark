@@ -252,6 +252,8 @@ struct EzSamplerDesc
     VkSamplerMipmapMode mipmap_mode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     VkBorderColor border_color = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
     bool anisotropy_enable = false;
+    bool compare_enable = false;
+    VkCompareOp compare_op = VK_COMPARE_OP_ALWAYS;
 };
 void ez_create_sampler(const EzSamplerDesc& desc, EzSampler& sampler);
 

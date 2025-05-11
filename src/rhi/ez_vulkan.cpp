@@ -1069,8 +1069,8 @@ void ez_create_sampler(const EzSamplerDesc& desc, EzSampler& sampler)
     sampler_create_info.anisotropyEnable = desc.anisotropy_enable;
     sampler_create_info.maxAnisotropy = 0.0f;
     sampler_create_info.unnormalizedCoordinates = VK_FALSE;
-    sampler_create_info.compareEnable = VK_FALSE;
-    sampler_create_info.compareOp = VK_COMPARE_OP_ALWAYS;
+    sampler_create_info.compareEnable = desc.compare_enable;
+    sampler_create_info.compareOp = desc.compare_op;
     VK_ASSERT(vkCreateSampler(ctx.device, &sampler_create_info, nullptr, &sampler->handle));
 }
 

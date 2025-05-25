@@ -763,7 +763,7 @@ void ez_create_swapchain(void* window, EzSwapchain& swapchain)
     sc_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     sc_create_info.surface = swapchain->surface;
     sc_create_info.minImageCount = 2;
-    sc_create_info.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+    sc_create_info.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
     sc_create_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     sc_create_info.imageExtent.width = swapchain->width;
     sc_create_info.imageExtent.height = swapchain->height;
@@ -815,7 +815,7 @@ EzSwapchainStatus ez_update_swapchain(EzSwapchain swapchain)
     sc_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     sc_create_info.surface = swapchain->surface;
     sc_create_info.minImageCount = 2;
-    sc_create_info.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+    sc_create_info.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
     sc_create_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     sc_create_info.imageExtent.width = swapchain->width;
     sc_create_info.imageExtent.height = swapchain->height;

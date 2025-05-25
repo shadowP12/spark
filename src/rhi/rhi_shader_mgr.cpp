@@ -1,6 +1,7 @@
 #include "rhi_shader_mgr.h"
 #include "core/hash.h"
 #include "core/path.h"
+#include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 
 static std::unordered_map<std::size_t, EzShader> g_shader_dict;
@@ -22,8 +23,14 @@ void rhi_compile_shader_internal(const std::string& file_path, const std::vector
 {
     std::string file_name = Path::filename(file_path);
     std::string parent_path = Path::parent_path(file_path);
-    std::string log_file_path = parent_path + "/" + file_name + "_compile.log";
-    std::string out_file_path = file_path + ".spv";
+    std::string bin_dir = parent_path + "/bin" ;
+    if (!DirAccess::dir_exists(bin_dir))
+    {
+        DirAccess::make_dir_recursive(bin_dir);
+    }
+
+    std::string log_file_path = bin_dir + "/" + file_name + "_compile.log";
+    std::string out_file_path = bin_dir + "/" + file_name + ".spv";
 
     std::string glslang_validator = getenv("VULKAN_SDK");
     glslang_validator += "/Bin/glslangValidator";

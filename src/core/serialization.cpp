@@ -47,6 +47,18 @@ void w_vec4(rapidjson::PrettyWriter<rapidjson::StringBuffer>& writer, glm::vec4 
     writer.EndArray();
 }
 
+void w_aabb(rapidjson::PrettyWriter<rapidjson::StringBuffer>& writer, BoundingBox v)
+{
+    writer.StartArray();
+    writer.Double(v.bb_min.x);
+    writer.Double(v.bb_min.y);
+    writer.Double(v.bb_min.z);
+    writer.Double(v.bb_max.x);
+    writer.Double(v.bb_max.y);
+    writer.Double(v.bb_max.z);
+    writer.EndArray();
+}
+
 glm::vec2 r_vec2(const rapidjson::Value& value)
 {
     glm::vec2 out = glm::vec2(value[0].GetDouble(), value[1].GetDouble());
@@ -63,5 +75,15 @@ glm::vec4 r_vec4(const rapidjson::Value& value)
 {
     glm::vec4 out = glm::vec4(value[0].GetDouble(), value[1].GetDouble(), value[2].GetDouble(), value[3].GetDouble());
     return out;
+}
+
+BoundingBox r_aabb(const rapidjson::Value& value)
+{
+    glm::vec3 bb_min = glm::vec3(value[0].GetDouble(), value[1].GetDouble(), value[2].GetDouble());
+    glm::vec3 bb_max = glm::vec3(value[4].GetDouble(), value[4].GetDouble(), value[5].GetDouble());
+    BoundingBox bounds;
+    bounds.bb_min = bb_min;
+    bounds.bb_max = bb_max;
+    return bounds;
 }
 }

@@ -32,3 +32,8 @@ if (WIN32)
     target_compile_definitions(volk PRIVATE VK_USE_PLATFORM_WIN32_KHR)
 endif()
 target_link_libraries(spark PUBLIC volk)
+
+# uuid4
+add_library(uuid4 STATIC extern/uuid4/uuid4.c extern/uuid4/uuid4.h)
+target_include_directories(spark PUBLIC extern/uuid4)
+target_link_libraries(spark PUBLIC uuid4)

@@ -4,7 +4,7 @@
 class FileAccess : public FileAccessBase
 {
 public:
-    typedef FileAccess*(*CreateFunc)();
+    typedef FileAccess* (*CreateFunc)();
 
     FileAccess() = default;
 
@@ -18,11 +18,10 @@ public:
 
     static bool exist(const std::string& name);
 
-    template <class T>
+    template<class T>
     static void make_default()
     {
-        _create_func = []()
-        {
+        _create_func = []() {
             return static_cast<FileAccess*>(new T());
         };
     }

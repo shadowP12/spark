@@ -13,8 +13,7 @@ template<class... Args>
 class Event
 {
 public:
-    struct EventData
-    {
+    struct EventData {
         EventHandle handle = 0;
         std::function<void(Args...)> func;
     };

@@ -6,7 +6,7 @@
 class DirAccess
 {
 public:
-    typedef DirAccess*(*CreateFunc)();
+    typedef DirAccess* (*CreateFunc)();
 
     static bool dir_exists(const std::string& dir);
 
@@ -16,11 +16,10 @@ public:
 
     static void copy(const std::string& from, const std::string& to);
 
-    template <class T>
+    template<class T>
     static void make_default()
     {
-        _create_func = []()
-        {
+        _create_func = []() {
             return static_cast<DirAccess*>(new T());
         };
     }

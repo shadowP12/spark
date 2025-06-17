@@ -10,8 +10,7 @@
 #define INF std::numeric_limits<float>::infinity()
 #define NEG_INF -INF
 
-enum ClockDirection
-{
+enum ClockDirection {
     CLOCKWISE,
     COUNTERCLOCKWISE
 };

@@ -8,8 +8,8 @@
 #include <deque>
 #include <unordered_map>
 
-#define EZ_MAX(a,b)            (((a) > (b)) ? (a) : (b))
-#define EZ_MIN(a,b)            (((a) < (b)) ? (a) : (b))
+#define EZ_MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define EZ_MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 template<class T>
 constexpr void hash_combine(std::size_t& seed, const T& v)
@@ -18,8 +18,7 @@ constexpr void hash_combine(std::size_t& seed, const T& v)
     seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
-struct Context
-{
+struct Context {
     uint64_t frame_count = 0;
     VkDevice device = VK_NULL_HANDLE;
     VkInstance instance = VK_NULL_HANDLE;
@@ -43,8 +42,7 @@ struct Context
     VmaAllocator allocator = VK_NULL_HANDLE;
 } ctx;
 
-struct ResourceManager
-{
+struct ResourceManager {
     uint64_t frame_count = 0;
     std::deque<std::pair<std::pair<VkImage, VmaAllocation>, uint64_t>> destroyer_images;
     std::deque<std::pair<VkImageView, uint64_t>> destroyer_imageviews;
@@ -212,8 +210,7 @@ void clear_res_mgr()
     update_res_mgr(~0);
 }
 
-struct StageBufferPool
-{
+struct StageBufferPool {
     uint64_t size = 0;
     uint64_t offset = 0;
     EzBuffer current_buffer = VK_NULL_HANDLE;
@@ -235,15 +232,13 @@ static const uint32_t EZ_SRV_COUNT = 64;
 static const uint32_t EZ_UAV_COUNT = 16;
 static const uint32_t EZ_SAMPLER_COUNT = 16;
 static const uint32_t EZ_BINDING_COUNT = 32;
-struct ResourceBinding
-{
+struct ResourceBinding {
     VkDescriptorBufferInfo buffer;
     std::vector<VkDescriptorImageInfo> images;
     VkDeviceSize dynamic_offset;
 };
 
-struct BindingTable
-{
+struct BindingTable {
     bool dirty;
     uint32_t pushconstants_size;
     uint8_t pushconstants_data[128];
@@ -354,15 +349,13 @@ void flush_binding_table()
             case VK_DESCRIPTOR_TYPE_SAMPLER:
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
             case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-            {
+            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
                 write.pImageInfo = binding_table.bindings[binding].images.data();
             }
             break;
 
             case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-            {
+            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: {
                 write.pBufferInfo = &binding_table.bindings[binding].buffer;
             }
             break;
@@ -496,13 +489,9 @@ void ez_init()
 
 #ifdef VK_DEBUG
     VkDebugUtilsMessengerCreateInfoEXT messenger_create_info{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
-    messenger_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    messenger_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 
-    messenger_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                                        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                                        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    messenger_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
     messenger_create_info.pfnUserCallback = debug_utils_messenger_cb;
     VK_ASSERT(vkCreateDebugUtilsMessengerEXT(ctx.instance, &messenger_create_info, nullptr, &ctx.debug_messenger));
@@ -868,7 +857,7 @@ void ez_create_buffer(const EzBufferDesc& desc, EzBuffer& buffer)
     buffer->size = desc.size;
     buffer->memory_usage = desc.memory_usage;
 
-    VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    VkBufferCreateInfo buffer_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_info.size = desc.size;
     buffer_info.usage = desc.usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -1223,8 +1212,7 @@ void ez_create_graphics_pipeline(const EzPipelineState& pipeline_state, const Ez
     pipeline->bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
     // Pipeline layout
-    auto insert_shader = [&](EzShader shader)
-    {
+    auto insert_shader = [&](EzShader shader) {
         if (shader == VK_NULL_HANDLE)
             return;
 
@@ -2204,7 +2192,7 @@ VkImageMemoryBarrier2 ez_image_barrier(EzSwapchain swapchain, EzResourceState re
     VkImageLayout image_layout = ez_get_image_layout(resource_state);
     VkAccessFlags access_flags = ez_get_access_flags(resource_state);
     VkPipelineStageFlags pipeline_stage_flags = ez_get_pipeline_stage_flags(access_flags);
-    return ez_image_barrier(swapchain, pipeline_stage_flags, access_flags,image_layout, aspect_mask);
+    return ez_image_barrier(swapchain, pipeline_stage_flags, access_flags, image_layout, aspect_mask);
 }
 
 VkImageMemoryBarrier2 ez_image_barrier(EzTexture texture, EzResourceState resource_state)
@@ -2213,7 +2201,7 @@ VkImageMemoryBarrier2 ez_image_barrier(EzTexture texture, EzResourceState resour
     VkImageLayout image_layout = ez_get_image_layout(resource_state);
     VkAccessFlags access_flags = ez_get_access_flags(resource_state);
     VkPipelineStageFlags pipeline_stage_flags = ez_get_pipeline_stage_flags(access_flags);
-    return ez_image_barrier(texture, pipeline_stage_flags, access_flags,image_layout, aspect_mask);
+    return ez_image_barrier(texture, pipeline_stage_flags, access_flags, image_layout, aspect_mask);
 }
 
 VkBufferMemoryBarrier2 ez_buffer_barrier(EzBuffer buffer, EzResourceState resource_state)
@@ -2224,8 +2212,8 @@ VkBufferMemoryBarrier2 ez_buffer_barrier(EzBuffer buffer, EzResourceState resour
 }
 
 void ez_pipeline_barrier(VkDependencyFlags dependency_flags,
-                      size_t buffer_barrier_count, const VkBufferMemoryBarrier2* buffer_barriers,
-                      size_t image_barrier_count, const VkImageMemoryBarrier2* image_barriers)
+                         size_t buffer_barrier_count, const VkBufferMemoryBarrier2* buffer_barriers,
+                         size_t image_barrier_count, const VkImageMemoryBarrier2* image_barriers)
 {
     VkDependencyInfo dependency_info = {};
     dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
@@ -2244,7 +2232,7 @@ void ez_create_query_pool(uint32_t query_count, VkQueryType type, EzQueryPool& q
     query_pool->type = type;
     query_pool->query_count = query_count;
 
-    VkQueryPoolCreateInfo query_pool_create_info = { VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO };
+    VkQueryPoolCreateInfo query_pool_create_info = {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO};
     query_pool_create_info.queryType = type;
     query_pool_create_info.queryCount = query_count;
     VK_ASSERT(vkCreateQueryPool(ctx.device, &query_pool_create_info, nullptr, &query_pool->handle));

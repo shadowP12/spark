@@ -12,16 +12,16 @@
 #define VK_NO_PROTOTYPES
 #define VMA_STATIC_VULKAN_FUNCTIONS 1
 #include "vk_mem_alloc.h"
-#include <volk.h>
 #include <spirv_reflect.h>
+#include <volk.h>
 
 #if defined(_WIN32)
 #undef GetObject
 #endif
 
+#include <set>
 #include <stdio.h>
 #include <stdlib.h>
-#include <set>
 #include <vector>
 
 #define VK_LOGE(...)                                 \
@@ -57,22 +57,22 @@
 
 #ifdef __cplusplus
 #ifndef EZ_MAKE_ENUM_FLAG
-#define EZ_MAKE_ENUM_FLAG(TYPE, ENUM_TYPE)                          \
-    static inline ENUM_TYPE operator|(ENUM_TYPE a, ENUM_TYPE b)     \
-    {                                                               \
-        return (ENUM_TYPE)((TYPE)(a) | (TYPE)(b));                  \
-    }                                                               \
-    static inline ENUM_TYPE operator&(ENUM_TYPE a, ENUM_TYPE b)     \
-    {                                                               \
-        return (ENUM_TYPE)((TYPE)(a) & (TYPE)(b));                  \
-    }                                                               \
-    static inline ENUM_TYPE operator|=(ENUM_TYPE& a, ENUM_TYPE b)   \
-    {                                                               \
-        return a = (a | b);                                         \
-    }                                                               \
-    static inline ENUM_TYPE operator&=(ENUM_TYPE& a, ENUM_TYPE b)   \
-    {                                                               \
-        return a = (a & b);                                         \
+#define EZ_MAKE_ENUM_FLAG(TYPE, ENUM_TYPE)                        \
+    static inline ENUM_TYPE operator|(ENUM_TYPE a, ENUM_TYPE b)   \
+    {                                                             \
+        return (ENUM_TYPE)((TYPE)(a) | (TYPE)(b));                \
+    }                                                             \
+    static inline ENUM_TYPE operator&(ENUM_TYPE a, ENUM_TYPE b)   \
+    {                                                             \
+        return (ENUM_TYPE)((TYPE)(a) & (TYPE)(b));                \
+    }                                                             \
+    static inline ENUM_TYPE operator|=(ENUM_TYPE& a, ENUM_TYPE b) \
+    {                                                             \
+        return a = (a | b);                                       \
+    }                                                             \
+    static inline ENUM_TYPE operator&=(ENUM_TYPE& a, ENUM_TYPE b) \
+    {                                                             \
+        return a = (a & b);                                       \
     }
 #endif
 #else
@@ -108,8 +108,7 @@ uint32_t ez_get_format_stride(VkFormat format);
 float ez_get_timestamp_period();
 
 // Swapchain
-struct EzSwapchain_T
-{
+struct EzSwapchain_T {
     uint32_t width;
     uint32_t height;
     uint32_t image_index;
@@ -125,8 +124,7 @@ struct EzSwapchain_T
 };
 VK_DEFINE_HANDLE(EzSwapchain)
 
-enum class EzSwapchainStatus
-{
+enum class EzSwapchainStatus {
     Ready,
     Resized,
     NotReady,
@@ -143,8 +141,7 @@ void ez_acquire_next_image(EzSwapchain swapchain);
 void ez_present(EzSwapchain swapchain);
 
 // Buffer
-struct EzBuffer_T
-{
+struct EzBuffer_T {
     size_t size;
     VkBuffer handle;
     VmaMemoryUsage memory_usage;
@@ -154,8 +151,7 @@ struct EzBuffer_T
 };
 VK_DEFINE_HANDLE(EzBuffer)
 
-struct EzBufferDesc
-{
+struct EzBufferDesc {
     size_t size;
     VkBufferUsageFlags usage;
     VmaMemoryUsage memory_usage;
@@ -174,22 +170,19 @@ void ez_copy_buffer(EzBuffer src_buffer, EzBuffer dst_buffer, VkBufferCopy range
 
 void ez_update_buffer(EzBuffer buffer, uint32_t size, uint32_t offset, void* data);
 
-struct EzStageAllocation
-{
+struct EzStageAllocation {
     uint64_t offset = 0;
     EzBuffer buffer = VK_NULL_HANDLE;
 };
 EzStageAllocation ez_alloc_stage_buffer(size_t size);
 
 // Texture
-struct EzTextureView
-{
+struct EzTextureView {
     VkImageView handle;
     VkImageSubresourceRange subresource_range;
 };
 
-struct EzTexture_T
-{
+struct EzTexture_T {
     uint32_t width;
     uint32_t height;
     uint32_t depth;
@@ -205,8 +198,7 @@ struct EzTexture_T
 };
 VK_DEFINE_HANDLE(EzTexture)
 
-struct EzTextureDesc
-{
+struct EzTextureDesc {
     uint32_t width = 1;
     uint32_t height = 1;
     uint32_t depth = 1;
@@ -236,14 +228,12 @@ void ez_clear_color_image(EzTexture texture, int texture_view, float c[4]);
 
 void ez_update_image(EzTexture texture, VkBufferImageCopy range, void* data);
 
-struct EzSampler_T
-{
+struct EzSampler_T {
     VkSampler handle = VK_NULL_HANDLE;
 };
 VK_DEFINE_HANDLE(EzSampler)
 
-struct EzSamplerDesc
-{
+struct EzSamplerDesc {
     VkFilter mag_filter = VK_FILTER_LINEAR;
     VkFilter min_filter = VK_FILTER_LINEAR;
     VkSamplerAddressMode address_u = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -260,8 +250,7 @@ void ez_create_sampler(const EzSamplerDesc& desc, EzSampler& sampler);
 void ez_destroy_sampler(EzSampler sampler);
 
 // Pipeline
-struct EzShader_T
-{
+struct EzShader_T {
     VkShaderModule handle = VK_NULL_HANDLE;
     VkPipelineShaderStageCreateInfo stage_info = {};
     VkPushConstantRange pushconstants = {};
@@ -274,8 +263,7 @@ void ez_create_shader(void* data, size_t size, EzShader& shader);
 
 void ez_destroy_shader(EzShader shader);
 
-struct EzPipeline_T
-{
+struct EzPipeline_T {
     VkPipelineBindPoint bind_point;
     VkPipeline handle = VK_NULL_HANDLE;
     VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
@@ -285,8 +273,7 @@ struct EzPipeline_T
 };
 VK_DEFINE_HANDLE(EzPipeline)
 
-struct EzBlendState
-{
+struct EzBlendState {
     bool blend_enable = false;
     VkBlendFactor src_color = VK_BLEND_FACTOR_SRC_ALPHA;
     VkBlendFactor dst_color = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -296,15 +283,13 @@ struct EzBlendState
     VkBlendOp alpha_op = VK_BLEND_OP_ADD;
 };
 
-struct EzDepthState
-{
+struct EzDepthState {
     bool depth_test = true;
     bool depth_write = true;
     VkCompareOp depth_func = VK_COMPARE_OP_LESS_OR_EQUAL;
 };
 
-struct EzStencilState
-{
+struct EzStencilState {
     bool stencil_test = false;
     uint8_t stencil_read_mask = 0xff;
     uint8_t stencil_write_mask = 0xff;
@@ -318,8 +303,7 @@ struct EzStencilState
     VkCompareOp back_stencil_func = VK_COMPARE_OP_ALWAYS;
 };
 
-struct EzMultisampleState
-{
+struct EzMultisampleState {
     bool sample_shading = false;
     bool alpha_to_coverage = false;
     bool alpha_to_one = false;
@@ -328,29 +312,25 @@ struct EzMultisampleState
 
 #define EZ_NUM_VERTEX_BUFFERS 8
 #define EZ_NUM_VERTEX_ATTRIBS 8
-struct EzVertexAttrib
-{
+struct EzVertexAttrib {
     uint32_t binding = 0;
     uint32_t offset = 0;
     VkFormat format = VK_FORMAT_UNDEFINED;
 };
 
-struct EzVertexBinding
-{
+struct EzVertexBinding {
     uint32_t vertex_stride = 0;
     VkVertexInputRate vertex_rate = VK_VERTEX_INPUT_RATE_VERTEX;
 };
 
-struct EzVertexLayout
-{
+struct EzVertexLayout {
     uint32_t vertex_binding_mask = 0;
     EzVertexBinding vertex_bindings[EZ_NUM_VERTEX_BUFFERS] = {};
     uint32_t vertex_attrib_mask = 0;
     EzVertexAttrib vertex_attribs[EZ_NUM_VERTEX_ATTRIBS] = {};
 };
 
-struct EzPipelineState
-{
+struct EzPipelineState {
     EzShader vertex_shader = VK_NULL_HANDLE;
     EzShader fragment_shader = VK_NULL_HANDLE;
     EzShader compute_shader = VK_NULL_HANDLE;
@@ -401,8 +381,7 @@ void ez_set_front_face(VkFrontFace front_face);
 
 void ez_set_cull_mode(VkCullModeFlagBits cull_mode);
 
-struct EzRenderingAttachmentInfo
-{
+struct EzRenderingAttachmentInfo {
     EzTexture texture = nullptr;
     int texture_view = 0;
     EzTexture resolve_texture = nullptr;
@@ -413,8 +392,7 @@ struct EzRenderingAttachmentInfo
     VkClearValue clear_value{};
 };
 
-struct EzRenderingInfo
-{
+struct EzRenderingInfo {
     uint32_t width;
     uint32_t height;
     std::vector<EzRenderingAttachmentInfo> depth;
@@ -465,8 +443,7 @@ void ez_dispatch(uint32_t thread_group_x, uint32_t thread_group_y, uint32_t thre
 void ez_dispatch_indirect(EzBuffer buffer, uint64_t offset);
 
 // Barrier
-enum EzResourceState
-{
+enum EzResourceState {
     EZ_RESOURCE_STATE_UNDEFINED = 0,
     EZ_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER = 0x1,
     EZ_RESOURCE_STATE_INDEX_BUFFER = 0x2,
@@ -499,8 +476,7 @@ void ez_pipeline_barrier(VkDependencyFlags dependency_flags,
                          size_t image_barrier_count,
                          const VkImageMemoryBarrier2* image_barriers);
 
-struct EzQueryPool_T
-{
+struct EzQueryPool_T {
     VkQueryPool handle;
     VkQueryType type;
     uint32_t query_count;

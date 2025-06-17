@@ -6,8 +6,7 @@
 class FileAccessBase
 {
 public:
-    enum ModeFlags
-    {
+    enum ModeFlags {
         READ = 1,
         WRITE = 2,
         READ_WRITE = 3,

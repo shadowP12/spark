@@ -4,6 +4,10 @@ set(SP_ALL_SOURCE_FILES spark.h spark.cpp)
 file(GLOB_RECURSE SP_CORE_SOURCE_FILES "core/*.h" "core/*.cpp")
 set(SP_ALL_SOURCE_FILES ${SP_ALL_SOURCE_FILES} ${SP_CORE_SOURCE_FILES})
 
+# serialization
+file(GLOB_RECURSE SP_SERIALIZATION_SOURCE_FILES "serialization/*.h" "serialization/*.cpp")
+set(SP_ALL_SOURCE_FILES ${SP_ALL_SOURCE_FILES} ${SP_SERIALIZATION_SOURCE_FILES})
+
 # platform
 file(GLOB_RECURSE SP_PLATFORM_SOURCE_FILES "platform/*.h" "platform/*.cpp")
 set(SP_ALL_SOURCE_FILES ${SP_ALL_SOURCE_FILES} ${SP_PLATFORM_SOURCE_FILES})

@@ -1,13 +1,11 @@
 #include "file_access_base.h"
 
-union MarshallFloat
-{
+union MarshallFloat {
     uint32_t i;
     float f;
 };
 
-union MarshallDouble
-{
+union MarshallDouble {
     uint64_t l;
     double d;
 };
@@ -60,7 +58,8 @@ uint64_t FileAccessBase::get_64() const
     a = get_32();
     b = get_32();
 
-    if (big_endian) {
+    if (big_endian)
+    {
         SWAP(a, b);
     }
 

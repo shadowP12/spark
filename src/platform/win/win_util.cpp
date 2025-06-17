@@ -4,8 +4,7 @@
 #endif
 
 #ifdef _WIN32
-namespace WinUtil
-{
+namespace WinUtil {
 std::wstring convert_utf8_to_wide(const std::string& str_utf8)
 {
     // Convert ansi to wide
@@ -14,5 +13,5 @@ std::wstring convert_utf8_to_wide(const std::string& str_utf8)
     MultiByteToWideChar(CP_ACP, 0, str_utf8.c_str(), (int)str_utf8.length(), &str_wide[0], count);
     return str_wide;
 }
-}
+}// namespace WinUtil
 #endif

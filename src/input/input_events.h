@@ -6,8 +6,7 @@ class MouseEvent
 {
 public:
     MouseEvent() = default;
-    enum class Type
-    {
+    enum class Type {
         DOWN,
         UP,
         MOVE,
@@ -25,10 +24,9 @@ public:
 };
 
 // Glfw keys
-enum class KeyCode
-{
+enum class KeyCode {
     ARROW_RIGHT = 262,
-    ARROW_LEFT =  263,
+    ARROW_LEFT = 263,
     ARROW_DOWN = 264,
     ARROW_UP = 265,
 };
@@ -37,8 +35,7 @@ class KeyboardEvent
 {
 public:
     KeyboardEvent() = default;
-    enum class Action
-    {
+    enum class Action {
         RELEASE,
         PRESS,
         REPEAT,

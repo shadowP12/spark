@@ -1,14 +1,14 @@
 #include "dir_access.h"
-#include "file_access.h"
 #include "core/path.h"
+#include "file_access.h"
+#include <algorithm>
 #include <memory>
 #include <vector>
-#include <algorithm>
 #ifdef _WIN32
 #include "platform/win/win_util.h"
-#include <windows.h>
 #include <errno.h>
 #include <wchar.h>
+#include <windows.h>
 #endif
 
 DirAccess::CreateFunc DirAccess::_create_func = nullptr;
@@ -30,9 +30,11 @@ Error DirAccess::make_dir_recursive(const std::string& dir)
     std::vector<std::string> subdirs = Path::subdirs(dir);
     for (int i = 0; i < subdirs.size(); ++i)
     {
-        if (!dir_exists(subdirs[i])) {
+        if (!dir_exists(subdirs[i]))
+        {
             Error err = make_dir(subdirs[i]);
-            if (err != ERR_OK && err != ERR_ALREADY_EXISTS) {
+            if (err != ERR_OK && err != ERR_ALREADY_EXISTS)
+            {
                 return err;
             }
         }
@@ -47,7 +49,7 @@ void DirAccess::copy(const std::string& from, const std::string& to)
 
     fsrc->seek(0);
     uint64_t size = fsrc->get_length();
-    uint64_t copy_buffer_limit = 65536; // 64 KB
+    uint64_t copy_buffer_limit = 65536;// 64 KB
     uint64_t buffer_size = std::min<uint64_t>(size * sizeof(uint8_t), copy_buffer_limit);
     std::vector<uint8_t> buffer;
     buffer.resize(buffer_size);
@@ -75,7 +77,8 @@ bool DirAccessWindows::_dir_exists(const std::string& dir)
 {
     DWORD file_attr;
     file_attr = GetFileAttributesW((LPCWSTR)(WinUtil::convert_utf8_to_wide(dir).c_str()));
-    if (INVALID_FILE_ATTRIBUTES == file_attr) {
+    if (INVALID_FILE_ATTRIBUTES == file_attr)
+    {
         return false;
     }
     return (file_attr & FILE_ATTRIBUTE_DIRECTORY);
@@ -89,19 +92,20 @@ Error DirAccessWindows::_make_dir(const std::string& dir)
     success = CreateDirectoryW((LPCWSTR)(WinUtil::convert_utf8_to_wide(dir).c_str()), nullptr);
     err = GetLastError();
 
-    if (success) {
+    if (success)
+    {
         return ERR_OK;
     }
 
-    if (err == ERROR_ALREADY_EXISTS || err == ERROR_ACCESS_DENIED) {
+    if (err == ERROR_ALREADY_EXISTS || err == ERROR_ACCESS_DENIED)
+    {
         return ERR_ALREADY_EXISTS;
     }
 
     return ERR_CANT_CREATE;
 }
 
-struct DirAccessRegister
-{
+struct DirAccessRegister {
     DirAccessRegister()
     {
         DirAccess::make_default<DirAccessWindows>();

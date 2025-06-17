@@ -25,16 +25,15 @@ inline uint32_t murmur3(const uint32_t* key, size_t wordCount, uint32_t seed) no
 }
 
 template<typename T>
-struct MurmurHash
-{
+struct MurmurHash {
     uint32_t operator()(const T& key) const noexcept
     {
         static_assert(0 == (sizeof(key) & 3u), "Hashing requires a size that is a multiple of 4.");
-        return murmur3((const uint32_t*) &key, sizeof(key) / 4, 0);
+        return murmur3((const uint32_t*)&key, sizeof(key) / 4, 0);
     }
 };
 
-template <class T>
+template<class T>
 void hash_combine(std::size_t& seed, const T& v)
 {
     std::hash<T> hasher;

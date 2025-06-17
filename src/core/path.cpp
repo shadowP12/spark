@@ -1,8 +1,7 @@
 #include "path.h"
 #include <regex>
 
-namespace Path
-{
+namespace Path {
 static std::map<std::string, std::string> protocols;
 
 std::map<std::string, std::string> get_protocols()
@@ -37,7 +36,7 @@ std::string filename(const std::string& path)
     size_t pos = path.find_last_of("/");
     if (pos == std::string::npos)
         return path;
-    return path.substr(pos+1);
+    return path.substr(pos + 1);
 }
 
 std::string extension(const std::string& path)
@@ -46,7 +45,7 @@ std::string extension(const std::string& path)
     size_t pos = name.find_last_of(".");
     if (pos == std::string::npos)
         return "";
-    return name.substr(pos+1);
+    return name.substr(pos + 1);
 }
 
 std::string parent_path(const std::string& path)
@@ -65,15 +64,17 @@ std::vector<std::string> subdirs(const std::string& path)
     std::vector<std::string> elems;
     while (current != std::string::npos)
     {
-        if (current > previous) {
-            elems.push_back(path.substr(0, current+1));
+        if (current > previous)
+        {
+            elems.push_back(path.substr(0, current + 1));
         }
         previous = current + 1;
         current = path.find(delim, previous);
     }
-    if (previous != path.size()) {
+    if (previous != path.size())
+    {
         elems.push_back(path);
     }
     return elems;
 }
-}
+}// namespace Path

@@ -32,4 +32,4 @@ inline glm::vec3 get_translation(const glm::mat4& mat)
 }
 
 glm::mat4 remove_scale(const glm::mat4& mat);
-}
+}// namespace TransformUtil

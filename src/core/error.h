@@ -1,7 +1,6 @@
 #pragma once
 
-enum Error
-{
+enum Error {
     ERR_OK,
     ERR_FAILED,
     ERR_FILE_EOF,

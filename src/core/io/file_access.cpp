@@ -2,9 +2,9 @@
 #include "core/path.h"
 #ifdef _WIN32
 #include "platform/win/win_util.h"
-#include <windows.h>
 #include <errno.h>
 #include <wchar.h>
+#include <windows.h>
 #endif
 
 FileAccess::CreateFunc FileAccess::_create_func = nullptr;
@@ -13,10 +13,12 @@ FileAccess* FileAccess::open(const std::string& path, int mode_flags, Error* out
 {
     FileAccess* ret = _create_func();
     Error err = ret->_open(path, mode_flags);
-    if (out_err) {
+    if (out_err)
+    {
         *out_err = err;
     }
-    if (err != ERR_OK) {
+    if (err != ERR_OK)
+    {
         delete ret;
         ret = nullptr;
     }
@@ -223,8 +225,7 @@ void FileAccessWindows::store_buffer(const uint8_t* src, uint64_t length)
     fwrite(src, 1, length, f);
 }
 
-struct FileAccessRegister
-{
+struct FileAccessRegister {
     FileAccessRegister()
     {
         FileAccess::make_default<FileAccessWindows>();

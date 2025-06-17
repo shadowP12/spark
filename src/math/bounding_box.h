@@ -76,14 +76,14 @@ public:
 
     void get_corners(glm::vec3 corners[8]) const
     {
-        corners[0] = { bb_min.x, bb_min.y, bb_min.z };
-        corners[1] = { bb_max.x, bb_min.y, bb_min.z };
-        corners[2] = { bb_min.x, bb_max.y, bb_min.z };
-        corners[3] = { bb_max.x, bb_max.y, bb_min.z };
-        corners[4] = { bb_min.x, bb_min.y, bb_max.z };
-        corners[5] = { bb_max.x, bb_min.y, bb_max.z };
-        corners[6] = { bb_min.x, bb_max.y, bb_max.z };
-        corners[7] = { bb_max.x, bb_max.y, bb_max.z };
+        corners[0] = {bb_min.x, bb_min.y, bb_min.z};
+        corners[1] = {bb_max.x, bb_min.y, bb_min.z};
+        corners[2] = {bb_min.x, bb_max.y, bb_min.z};
+        corners[3] = {bb_max.x, bb_max.y, bb_min.z};
+        corners[4] = {bb_min.x, bb_min.y, bb_max.z};
+        corners[5] = {bb_max.x, bb_min.y, bb_max.z};
+        corners[6] = {bb_min.x, bb_max.y, bb_max.z};
+        corners[7] = {bb_max.x, bb_max.y, bb_max.z};
     }
 
     void merge(const BoundingBox& bbox)

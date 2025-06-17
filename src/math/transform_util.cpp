@@ -1,7 +1,7 @@
 #include "transform_util.h"
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace TransformUtil {
 glm::mat4 remove_scale(const glm::mat4& mat)
@@ -14,4 +14,4 @@ glm::mat4 remove_scale(const glm::mat4& mat)
     glm::decompose(mat, scale, rot, translation, skew, perspective);
     return glm::translate(glm::mat4(1.0), translation) * glm::toMat4(rot);
 }
-}
+}// namespace TransformUtil

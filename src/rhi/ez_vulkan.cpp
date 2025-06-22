@@ -23,8 +23,12 @@ struct Context {
     VkDevice device = VK_NULL_HANDLE;
     VkInstance instance = VK_NULL_HANDLE;
     VkPhysicalDevice physical_device = VK_NULL_HANDLE;
-    VkPhysicalDeviceProperties physical_device_properties{};
-    VkPhysicalDeviceMemoryProperties physical_device_memory_properties{};
+    VkPhysicalDeviceProperties2 properties2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+    VkPhysicalDeviceVulkan11Properties properties_1_1 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES};
+    VkPhysicalDeviceVulkan12Properties properties_1_2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES};
+    VkPhysicalDeviceVulkan13Properties properties_1_3 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
+    VkPhysicalDeviceAccelerationStructurePropertiesKHR acceleration_structure_properties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracing_properties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
     VkDebugUtilsMessengerEXT debug_messenger = VK_NULL_HANDLE;
     VkQueue queue = VK_NULL_HANDLE;
     VkCommandBuffer cmd = VK_NULL_HANDLE;
@@ -517,23 +521,65 @@ void ez_init()
                 VK_VERSION_PATCH(props.driverVersion));
     }
     ctx.physical_device = gpus.front();
-    vkGetPhysicalDeviceProperties(ctx.physical_device, &ctx.physical_device_properties);
-    vkGetPhysicalDeviceMemoryProperties(ctx.physical_device, &ctx.physical_device_memory_properties);
 
-    // Features
-    VkPhysicalDeviceFeatures2KHR physical_device_features2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
+    ctx.properties2.pNext = &ctx.properties_1_1;
+    ctx.properties_1_1.pNext = &ctx.properties_1_2;
+    ctx.properties_1_2.pNext = &ctx.properties_1_3;
+    void** properties_chain = &ctx.properties_1_3.pNext;
+
+    VkPhysicalDeviceFeatures2KHR features2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
     VkPhysicalDeviceVulkan11Features features_1_1 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
     VkPhysicalDeviceVulkan12Features features_1_2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
-
     VkPhysicalDeviceVulkan13Features features_1_3 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
     features_1_3.dynamicRendering = true;
     features_1_3.synchronization2 = true;
     features_1_3.maintenance4 = true;
-
+    features2.pNext = &features_1_1;
     features_1_1.pNext = &features_1_2;
     features_1_2.pNext = &features_1_3;
-    physical_device_features2.pNext = &features_1_1;
-    vkGetPhysicalDeviceFeatures2(ctx.physical_device, &physical_device_features2);
+    void** features_chain = &features_1_3.pNext;
+
+    uint32_t num_device_available_extensions = 0;
+    VK_ASSERT(vkEnumerateDeviceExtensionProperties(ctx.physical_device, nullptr, &num_device_available_extensions, nullptr));
+    std::vector<VkExtensionProperties> device_available_extensions(num_device_available_extensions);
+    VK_ASSERT(vkEnumerateDeviceExtensionProperties(ctx.physical_device, nullptr, &num_device_available_extensions, device_available_extensions.data()));
+
+    std::vector<const char*> device_extensions;
+    device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR acceleration_structure_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracing_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+    VkPhysicalDeviceRayQueryFeaturesKHR raytracing_query_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
+
+    if (is_extension_supported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, device_available_extensions))
+    {
+        device_extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+        *features_chain = &acceleration_structure_features;
+        features_chain = &acceleration_structure_features.pNext;
+        *properties_chain = &ctx.acceleration_structure_properties;
+        properties_chain = &ctx.acceleration_structure_properties.pNext;
+
+        if(is_extension_supported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, device_available_extensions))
+        {
+            device_extensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+            device_extensions.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
+            *features_chain = &raytracing_features;
+            features_chain = &raytracing_features.pNext;
+            *properties_chain = &ctx.raytracing_properties;
+            properties_chain = &ctx.raytracing_properties.pNext;
+        }
+
+        if(is_extension_supported(VK_KHR_RAY_QUERY_EXTENSION_NAME, device_available_extensions))
+        {
+            device_extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+            *features_chain = &raytracing_query_features;
+            features_chain = &raytracing_query_features.pNext;
+        }
+    }
+
+    vkGetPhysicalDeviceFeatures2(ctx.physical_device, &features2);
+    vkGetPhysicalDeviceProperties2(ctx.physical_device, &ctx.properties2);
 
     uint32_t num_queue_families;
     vkGetPhysicalDeviceQueueFamilyProperties(ctx.physical_device, &num_queue_families, nullptr);
@@ -556,27 +602,9 @@ void ez_init()
     queue_create_info.queueCount = 1;
     queue_create_info.pQueuePriorities = &graphics_queue_prio;
 
-    uint32_t num_device_available_extensions = 0;
-    VK_ASSERT(vkEnumerateDeviceExtensionProperties(ctx.physical_device, nullptr, &num_device_available_extensions, nullptr));
-    std::vector<VkExtensionProperties> device_available_extensions(num_device_available_extensions);
-    VK_ASSERT(vkEnumerateDeviceExtensionProperties(ctx.physical_device, nullptr, &num_device_available_extensions, device_available_extensions.data()));
-
-    std::vector<const char*> device_required_extensions;
-    std::vector<const char*> device_extensions;
-    device_required_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    device_required_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-    device_required_extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-    for (auto it = device_required_extensions.begin(); it != device_required_extensions.end(); ++it)
-    {
-        if (is_extension_supported(*it, device_available_extensions))
-        {
-            device_extensions.push_back(*it);
-        }
-    }
-
     VkDeviceCreateInfo device_create_info = {};
     device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    device_create_info.pNext = &physical_device_features2;
+    device_create_info.pNext = &features2;
     device_create_info.flags = 0;
     device_create_info.queueCreateInfoCount = 1;
     device_create_info.pQueueCreateInfos = &queue_create_info;
@@ -726,7 +754,7 @@ void ez_flush()
 // Props
 float ez_get_timestamp_period()
 {
-    return ctx.physical_device_properties.limits.timestampPeriod;
+    return ctx.properties2.properties.limits.timestampPeriod;
 }
 
 // Swapchain

@@ -29,6 +29,15 @@ struct Context {
     VkPhysicalDeviceVulkan13Properties properties_1_3 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
     VkPhysicalDeviceAccelerationStructurePropertiesKHR acceleration_structure_properties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracing_properties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+
+    VkPhysicalDeviceFeatures2KHR features2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
+    VkPhysicalDeviceVulkan11Features features_1_1 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+    VkPhysicalDeviceVulkan12Features features_1_2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+    VkPhysicalDeviceVulkan13Features features_1_3 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR acceleration_structure_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracing_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+    VkPhysicalDeviceRayQueryFeaturesKHR raytracing_query_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
+
     VkDebugUtilsMessengerEXT debug_messenger = VK_NULL_HANDLE;
     VkQueue queue = VK_NULL_HANDLE;
     VkCommandBuffer cmd = VK_NULL_HANDLE;
@@ -44,6 +53,7 @@ struct Context {
     EzPipeline pipeline = VK_NULL_HANDLE;
     std::unordered_map<std::size_t, EzPipeline> pipeline_cache;
     VmaAllocator allocator = VK_NULL_HANDLE;
+    EzFeature support_features = EZ_FEATURE_NONE;
 } ctx;
 
 struct ResourceManager {
@@ -59,6 +69,7 @@ struct ResourceManager {
     std::deque<std::pair<VkPipelineLayout, uint64_t>> destroyer_pipeline_layouts;
     std::deque<std::pair<VkPipeline, uint64_t>> destroyer_pipelines;
     std::deque<std::pair<VkQueryPool, uint64_t>> destroyer_query_pools;
+    std::deque<std::pair<VkAccelerationStructureKHR, uint64_t>> destroyer_acceleration_structures;
 } res_mgr;
 
 void update_res_mgr(uint64_t current_frame_count)
@@ -201,6 +212,19 @@ void update_res_mgr(uint64_t current_frame_count)
             auto item = res_mgr.destroyer_query_pools.front();
             res_mgr.destroyer_query_pools.pop_front();
             vkDestroyQueryPool(ctx.device, item.first, nullptr);
+        }
+        else
+        {
+            break;
+        }
+    }
+    while (!res_mgr.destroyer_acceleration_structures.empty())
+    {
+        if (res_mgr.destroyer_acceleration_structures.front().second < res_mgr.frame_count)
+        {
+            auto item = res_mgr.destroyer_acceleration_structures.front();
+            res_mgr.destroyer_acceleration_structures.pop_front();
+            vkDestroyAccelerationStructureKHR(ctx.device, item.first, nullptr);
         }
         else
         {
@@ -527,17 +551,13 @@ void ez_init()
     ctx.properties_1_2.pNext = &ctx.properties_1_3;
     void** properties_chain = &ctx.properties_1_3.pNext;
 
-    VkPhysicalDeviceFeatures2KHR features2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
-    VkPhysicalDeviceVulkan11Features features_1_1 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
-    VkPhysicalDeviceVulkan12Features features_1_2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
-    VkPhysicalDeviceVulkan13Features features_1_3 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
-    features_1_3.dynamicRendering = true;
-    features_1_3.synchronization2 = true;
-    features_1_3.maintenance4 = true;
-    features2.pNext = &features_1_1;
-    features_1_1.pNext = &features_1_2;
-    features_1_2.pNext = &features_1_3;
-    void** features_chain = &features_1_3.pNext;
+    ctx.features_1_3.dynamicRendering = true;
+    ctx.features_1_3.synchronization2 = true;
+    ctx.features_1_3.maintenance4 = true;
+    ctx.features2.pNext = &ctx.features_1_1;
+    ctx.features_1_1.pNext = &ctx.features_1_2;
+    ctx.features_1_2.pNext = &ctx.features_1_3;
+    void** features_chain = &ctx.features_1_3.pNext;
 
     uint32_t num_device_available_extensions = 0;
     VK_ASSERT(vkEnumerateDeviceExtensionProperties(ctx.physical_device, nullptr, &num_device_available_extensions, nullptr));
@@ -547,16 +567,12 @@ void ez_init()
     std::vector<const char*> device_extensions;
     device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
-    VkPhysicalDeviceAccelerationStructureFeaturesKHR acceleration_structure_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
-    VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracing_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-    VkPhysicalDeviceRayQueryFeaturesKHR raytracing_query_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
-
     if (is_extension_supported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, device_available_extensions))
     {
         device_extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
         device_extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-        *features_chain = &acceleration_structure_features;
-        features_chain = &acceleration_structure_features.pNext;
+        *features_chain = &ctx.acceleration_structure_features;
+        features_chain = &ctx.acceleration_structure_features.pNext;
         *properties_chain = &ctx.acceleration_structure_properties;
         properties_chain = &ctx.acceleration_structure_properties.pNext;
 
@@ -564,8 +580,8 @@ void ez_init()
         {
             device_extensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
             device_extensions.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
-            *features_chain = &raytracing_features;
-            features_chain = &raytracing_features.pNext;
+            *features_chain = &ctx.raytracing_features;
+            features_chain = &ctx.raytracing_features.pNext;
             *properties_chain = &ctx.raytracing_properties;
             properties_chain = &ctx.raytracing_properties.pNext;
         }
@@ -573,13 +589,21 @@ void ez_init()
         if(is_extension_supported(VK_KHR_RAY_QUERY_EXTENSION_NAME, device_available_extensions))
         {
             device_extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
-            *features_chain = &raytracing_query_features;
-            features_chain = &raytracing_query_features.pNext;
+            *features_chain = &ctx.raytracing_query_features;
+            features_chain = &ctx.raytracing_query_features.pNext;
         }
     }
 
-    vkGetPhysicalDeviceFeatures2(ctx.physical_device, &features2);
+    vkGetPhysicalDeviceFeatures2(ctx.physical_device, &ctx.features2);
     vkGetPhysicalDeviceProperties2(ctx.physical_device, &ctx.properties2);
+
+    if (ctx.raytracing_features.rayTracingPipeline == VK_TRUE &&
+        ctx.raytracing_query_features.rayQuery == VK_TRUE &&
+        ctx.acceleration_structure_features.accelerationStructure == VK_TRUE &&
+        ctx.features_1_2.bufferDeviceAddress == VK_TRUE)
+    {
+        ctx.support_features |= EZ_FEATURE_RAYTRACING;
+    }
 
     uint32_t num_queue_families;
     vkGetPhysicalDeviceQueueFamilyProperties(ctx.physical_device, &num_queue_families, nullptr);
@@ -604,7 +628,7 @@ void ez_init()
 
     VkDeviceCreateInfo device_create_info = {};
     device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    device_create_info.pNext = &features2;
+    device_create_info.pNext = &ctx.features2;
     device_create_info.flags = 0;
     device_create_info.queueCreateInfoCount = 1;
     device_create_info.pQueueCreateInfos = &queue_create_info;
@@ -644,7 +668,7 @@ void ez_init()
     allocatorInfo.physicalDevice = ctx.physical_device;
     allocatorInfo.device = ctx.device;
     allocatorInfo.instance = ctx.instance;
-    if (features_1_2.bufferDeviceAddress)
+    if (ctx.features_1_2.bufferDeviceAddress)
     {
         allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
     }
@@ -655,10 +679,7 @@ void ez_terminate()
 {
     for (auto pipeline_iter : ctx.pipeline_cache)
     {
-        res_mgr.destroyer_pipelines.emplace_back(pipeline_iter.second->handle, ctx.frame_count);
-        res_mgr.destroyer_pipeline_layouts.emplace_back(pipeline_iter.second->pipeline_layout, ctx.frame_count);
-        res_mgr.destroyer_descriptor_set_layouts.emplace_back(pipeline_iter.second->descriptor_set_layout, ctx.frame_count);
-        delete pipeline_iter.second;
+        ez_destroy_pipeline(pipeline_iter.second);
     }
     ctx.pipeline_cache.clear();
     destroy_descriptor_pool();
@@ -751,10 +772,31 @@ void ez_flush()
     vkDeviceWaitIdle(ctx.device);
 }
 
+// Support features
+bool ez_support_feature(EzFeature feature)
+{
+    return ctx.support_features & feature;
+}
+
 // Props
 float ez_get_timestamp_period()
 {
     return ctx.properties2.properties.limits.timestampPeriod;
+}
+
+uint32_t ez_get_shader_group_handle_size()
+{
+    return ctx.raytracing_properties.shaderGroupHandleSize;
+}
+
+uint32_t ez_get_shader_group_handle_alignment()
+{
+    return ctx.raytracing_properties.shaderGroupHandleAlignment;
+}
+
+uint32_t ez_get_shader_group_base_alignment()
+{
+    return ctx.raytracing_properties.shaderGroupBaseAlignment;
 }
 
 // Swapchain
@@ -889,11 +931,23 @@ void ez_create_buffer(const EzBufferDesc& desc, EzBuffer& buffer)
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_info.size = desc.size;
     buffer_info.usage = desc.usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (ctx.features_1_2.bufferDeviceAddress)
+    {
+        buffer_info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    }
 
     VmaAllocationCreateInfo alloc_info = {};
     alloc_info.usage = desc.memory_usage;
 
     VK_ASSERT(vmaCreateBuffer(ctx.allocator, &buffer_info, &alloc_info, &buffer->handle, &buffer->allocation, nullptr));
+
+    if (buffer_info.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
+    {
+        VkBufferDeviceAddressInfo address_info = {};
+        address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        address_info.buffer = buffer->handle;
+        buffer->address = vkGetBufferDeviceAddress(ctx.device, &address_info);
+    }
 }
 
 void ez_destroy_buffer(EzBuffer buffer)
@@ -1097,6 +1151,141 @@ void ez_destroy_sampler(EzSampler sampler)
     delete sampler;
 }
 
+// AccelerationStructure
+void fill_acceleration_structure_geometries_info(const EzAccelerationStructureBuildInfo& build_info,
+                                                 std::vector<uint32_t> primitive_counts,
+                                                 std::vector<VkAccelerationStructureGeometryKHR>& geometries,
+                                                 std::vector<VkAccelerationStructureBuildRangeInfoKHR>& ranges)
+{
+    for(auto& triangles : build_info.geometry_set.triangles)
+    {
+        auto& geometry = geometries.back();
+        geometry = {};
+        geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+        geometry.flags = triangles.flags;
+        geometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+        geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+        geometry.geometry.triangles.indexType = triangles.index_type;
+        geometry.geometry.triangles.maxVertex = triangles.vertex_count;
+        geometry.geometry.triangles.vertexStride = triangles.vertex_stride;
+        geometry.geometry.triangles.vertexFormat = triangles.vertex_format;
+        geometry.geometry.triangles.vertexData.deviceAddress = triangles.vertex_buffer->address + triangles.vertex_offset;
+        geometry.geometry.triangles.indexData.deviceAddress = triangles.index_buffer->address + triangles.index_offset;
+
+        primitive_counts.emplace_back();
+        uint32_t& primitive_count = primitive_counts.back();
+        primitive_count = triangles.index_count / 3;
+
+        ranges.emplace_back();
+        auto& range = ranges.back();
+        range.primitiveCount = triangles.index_count / 3;
+        range.primitiveOffset = 0;
+    }
+
+    for(auto& instances : build_info.geometry_set.instances)
+    {
+        auto& geometry = geometries.back();
+        geometry = {};
+        geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+        geometry.flags = instances.flags;
+        geometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+        geometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+        geometry.geometry.instances.arrayOfPointers = VK_FALSE;
+        geometry.geometry.instances.data.deviceAddress = instances.instance_buffer->address;
+
+        primitive_counts.emplace_back();
+        uint32_t& primitive_count = primitive_counts.back();
+        primitive_count = instances.count;
+
+        ranges.emplace_back();
+        auto& range = ranges.back();
+        range = {};
+        range.primitiveCount = instances.count;
+        range.primitiveOffset = instances.offset;
+    }
+}
+
+void ez_create_acceleration_structure(const EzAccelerationStructureBuildInfo& build_info, EzAccelerationStructure& as)
+{
+    std::vector<uint32_t> primitive_counts;
+    std::vector<VkAccelerationStructureGeometryKHR> geometries;
+    std::vector<VkAccelerationStructureBuildRangeInfoKHR> ranges;
+    fill_acceleration_structure_geometries_info(build_info, primitive_counts, geometries, ranges);
+
+    VkAccelerationStructureBuildGeometryInfoKHR vk_build_info{};
+    vk_build_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    vk_build_info.flags = build_info.flags;
+    vk_build_info.type = build_info.type;
+    vk_build_info.geometryCount = geometries.size();
+    vk_build_info.pGeometries = geometries.data();
+
+    VkAccelerationStructureBuildSizesInfoKHR sizes_info{};
+    sizes_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+
+    vkGetAccelerationStructureBuildSizesKHR(
+        ctx.device,
+        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+        &vk_build_info,
+        primitive_counts.data(),
+        &sizes_info
+    );
+    as->sizes_info.as_size = sizes_info.accelerationStructureSize;
+    as->sizes_info.build_scratch_size = sizes_info.buildScratchSize;
+    as->sizes_info.update_scratch_size = sizes_info.updateScratchSize;
+
+    EzBufferDesc buffer_desc = {};
+    buffer_desc.size = as->sizes_info.as_size;
+    buffer_desc.usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_desc.memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    ez_create_buffer(buffer_desc, as->buffer);
+
+    VkAccelerationStructureCreateInfoKHR create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    create_info.type = vk_build_info.type;
+    create_info.buffer = as->buffer->handle;
+    create_info.size = as->sizes_info.as_size;
+    VK_ASSERT(vkCreateAccelerationStructureKHR(
+        ctx.device,
+        &create_info,
+        nullptr,
+        &as->handle
+    ));
+}
+
+void ez_destroy_acceleration_structure(EzAccelerationStructure as)
+{
+    ez_destroy_buffer(as->buffer);
+    res_mgr.destroyer_acceleration_structures.emplace_back(as->handle, ctx.frame_count);
+    delete as;
+}
+
+void ez_build_acceleration_structure(const EzAccelerationStructureBuildInfo& build_info, EzAccelerationStructure as)
+{
+    std::vector<uint32_t> primitive_counts;
+    std::vector<VkAccelerationStructureGeometryKHR> geometries;
+    std::vector<VkAccelerationStructureBuildRangeInfoKHR> ranges;
+    fill_acceleration_structure_geometries_info(build_info, primitive_counts, geometries, ranges);
+
+    VkAccelerationStructureBuildGeometryInfoKHR vk_build_info{};
+    vk_build_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    vk_build_info.flags = build_info.flags;
+    vk_build_info.type = build_info.type;
+    vk_build_info.mode = build_info.mode;
+    vk_build_info.geometryCount = geometries.size();
+    vk_build_info.pGeometries = geometries.data();
+    vk_build_info.srcAccelerationStructure = as->handle;
+    vk_build_info.dstAccelerationStructure = as->handle;
+    vk_build_info.scratchData.deviceAddress = build_info.scratch_buffer->address;
+
+    VkAccelerationStructureBuildRangeInfoKHR* p_range_info = ranges.data();
+    vkCmdBuildAccelerationStructuresKHR(
+        ctx.cmd,
+        1,
+        &vk_build_info,
+        &p_range_info
+    );
+}
+
 // Pipeline
 static VkShaderStageFlagBits parse_shader_stage(SpvReflectShaderStageFlagBits reflect_shader_stage)
 {
@@ -1234,12 +1423,8 @@ uint32_t ez_get_format_stride(VkFormat format)
     return 0;
 }
 
-void ez_create_graphics_pipeline(const EzPipelineState& pipeline_state, const EzRenderingInfo& rendering_info, EzPipeline& pipeline)
+void ez_create_pipeline_layout(EzPipeline& pipeline, const std::vector<EzShader>& shaders)
 {
-    pipeline = new EzPipeline_T();
-    pipeline->bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
-
-    // Pipeline layout
     auto insert_shader = [&](EzShader shader) {
         if (shader == VK_NULL_HANDLE)
             return;
@@ -1273,8 +1458,10 @@ void ez_create_graphics_pipeline(const EzPipelineState& pipeline_state, const Ez
         }
     };
 
-    insert_shader(pipeline_state.vertex_shader);
-    insert_shader(pipeline_state.fragment_shader);
+    for (size_t i = 0; i < shaders.size(); ++i)
+    {
+        insert_shader(shaders[i]);
+    }
 
     std::vector<VkDescriptorSetLayout> set_layouts;
     VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info = {};
@@ -1299,6 +1486,19 @@ void ez_create_graphics_pipeline(const EzPipelineState& pipeline_state, const Ez
         pipeline_layout_create_info.pPushConstantRanges = nullptr;
     }
     VK_ASSERT(vkCreatePipelineLayout(ctx.device, &pipeline_layout_create_info, nullptr, &pipeline->pipeline_layout));
+}
+
+void ez_create_graphics_pipeline(const EzPipelineState& pipeline_state, const EzRenderingInfo& rendering_info, EzPipeline& pipeline)
+{
+    pipeline = new EzPipeline_T();
+    pipeline->bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+    std::vector<EzShader> shaders;
+    shaders.push_back(pipeline_state.vertex_shader);
+    shaders.push_back(pipeline_state.fragment_shader);
+
+    // Pipeline layout
+    ez_create_pipeline_layout(pipeline, shaders);
 
     VkGraphicsPipelineCreateInfo pipeline_info = {};
     pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -1308,13 +1508,9 @@ void ez_create_graphics_pipeline(const EzPipelineState& pipeline_state, const Ez
     // Shader
     uint32_t shader_stage_count = 0;
     VkPipelineShaderStageCreateInfo shader_stages[2] = {};
-    if (pipeline_state.vertex_shader != VK_NULL_HANDLE)
+    for (size_t i = 0; i < shaders.size(); ++i)
     {
-        shader_stages[shader_stage_count++] = pipeline_state.vertex_shader->stage_info;
-    }
-    if (pipeline_state.fragment_shader != VK_NULL_HANDLE)
-    {
-        shader_stages[shader_stage_count++] = pipeline_state.fragment_shader->stage_info;
+        shader_stages[shader_stage_count++] = shaders[i]->stage_info;
     }
     pipeline_info.stageCount = shader_stage_count;
     pipeline_info.pStages = shader_stages;
@@ -1499,30 +1695,10 @@ void ez_create_compute_pipeline(const EzPipelineState& pipeline_state, EzPipelin
 {
     pipeline = new EzPipeline_T();
     pipeline->bind_point = VK_PIPELINE_BIND_POINT_COMPUTE;
-    pipeline->pushconstants = pipeline_state.compute_shader->pushconstants;
-    pipeline->layout_bindings = pipeline_state.compute_shader->layout_bindings;
 
-    std::vector<VkDescriptorSetLayout> layouts;
-    VkDescriptorSetLayoutCreateInfo layout_create_info = {};
-    layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layout_create_info.pBindings = pipeline->layout_bindings.data();
-    layout_create_info.bindingCount = uint32_t(pipeline->layout_bindings.size());
-    VK_ASSERT(vkCreateDescriptorSetLayout(ctx.device, &layout_create_info, nullptr, &pipeline->descriptor_set_layout));
-    layouts.push_back(pipeline->descriptor_set_layout);
-
-    VkPipelineLayoutCreateInfo pipeline_layout_create_info = {};
-    pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_create_info.pSetLayouts = layouts.data();
-    pipeline_layout_create_info.setLayoutCount = (uint32_t)layouts.size();
-    pipeline_layout_create_info.pushConstantRangeCount = 0;
-    pipeline_layout_create_info.pPushConstantRanges = nullptr;
-    if (pipeline->pushconstants.size > 0)
-    {
-        pipeline_layout_create_info.pushConstantRangeCount = 1;
-        pipeline_layout_create_info.pPushConstantRanges = &pipeline->pushconstants;
-    }
-
-    VK_ASSERT(vkCreatePipelineLayout(ctx.device, &pipeline_layout_create_info, nullptr, &pipeline->pipeline_layout));
+    std::vector<EzShader> shaders;
+    shaders.push_back(pipeline_state.compute_shader);
+    ez_create_pipeline_layout(pipeline, shaders);
 
     VkComputePipelineCreateInfo pipeline_create_info = {};
     pipeline_create_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -1535,6 +1711,8 @@ void ez_create_compute_pipeline(const EzPipelineState& pipeline_state, EzPipelin
 void ez_destroy_pipeline(EzPipeline pipeline)
 {
     res_mgr.destroyer_pipelines.emplace_back(pipeline->handle, ctx.frame_count);
+    res_mgr.destroyer_pipeline_layouts.emplace_back(pipeline->pipeline_layout, ctx.frame_count);
+    res_mgr.destroyer_descriptor_set_layouts.emplace_back(pipeline->descriptor_set_layout, ctx.frame_count);
     delete pipeline;
 }
 
@@ -1993,6 +2171,69 @@ void ez_dispatch_indirect(EzBuffer buffer, uint64_t offset)
     vkCmdDispatchIndirect(ctx.cmd, buffer->handle, offset);
 }
 
+void ez_create_raytracing_pipeline(const EzRaytracingPipelineDesc& desc, EzPipeline& pipeline)
+{
+    pipeline = new EzPipeline_T();
+    pipeline->bind_point = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+
+    ez_create_pipeline_layout(pipeline, desc.shaders);
+
+    std::vector<VkPipelineShaderStageCreateInfo> stages;
+    for(auto& shader : desc.shaders)
+    {
+        stages.push_back(shader->stage_info);
+    }
+
+    std::vector<VkRayTracingShaderGroupCreateInfoKHR> groups;
+    groups.reserve(desc.groups.size());
+    for (auto& x : desc.groups)
+    {
+        groups.emplace_back();
+        auto& group = groups.back();
+        group = {};
+        group.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+        group.type = x.type;
+        group.generalShader = x.general_shader;
+        group.closestHitShader = x.closesthit_shader;
+        group.anyHitShader = x.anyhit_shader;
+        group.intersectionShader = x.intersection_shader;
+    }
+
+    VkRayTracingPipelineCreateInfoKHR create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+    create_info.flags = 0;
+    create_info.maxPipelineRayRecursionDepth = desc.max_trace_recursion_depth;
+    create_info.layout = pipeline->pipeline_layout;
+    create_info.stageCount = (uint32_t)stages.size();
+    create_info.pStages = stages.data();
+    create_info.groupCount = (uint32_t)groups.size();
+    create_info.pGroups = groups.data();
+    VK_ASSERT(vkCreateRayTracingPipelinesKHR(
+        ctx.device,
+        VK_NULL_HANDLE,
+        VK_NULL_HANDLE,
+        1,
+        &create_info,
+        nullptr,
+        &pipeline->handle
+    ));
+}
+
+void ez_bind_raytracing_pipeline(EzPipeline pipeline)
+{
+    if (ctx.pipeline != pipeline)
+    {
+        binding_table.dirty = true;
+        ctx.pipeline = pipeline;
+        vkCmdBindPipeline(ctx.cmd, pipeline->bind_point, pipeline->handle);
+    }
+}
+
+void ez_get_raytracing_group_handle(EzPipeline pipeline, uint32_t first_group, uint32_t group_count, size_t data_size, void* data)
+{
+    vkGetRayTracingShaderGroupHandlesKHR(ctx.device, pipeline->handle, first_group, group_count, data_size, data);
+}
+
 // Barrier
 VkImageMemoryBarrier2 ez_image_barrier(EzSwapchain swapchain,
                                        VkPipelineStageFlags2 stage_mask,
@@ -2191,6 +2432,10 @@ VkPipelineStageFlags ez_get_pipeline_stage_flags(VkAccessFlags access_flags)
         flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
         flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
         flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        if(ez_support_feature(EZ_FEATURE_RAYTRACING))
+        {
+            flags |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+        }
     }
 
     if ((access_flags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0)
@@ -2239,9 +2484,22 @@ VkBufferMemoryBarrier2 ez_buffer_barrier(EzBuffer buffer, EzResourceState resour
     return ez_buffer_barrier(buffer, pipeline_stage_flags, access_flags);
 }
 
+VkMemoryBarrier2 ez_memory_barrier(VkAccessFlags src_access_mask, VkAccessFlags dst_access_mask,
+                                   VkPipelineStageFlags src_stage_mask, VkPipelineStageFlags dst_stage_mask)
+{
+    VkMemoryBarrier2 barrier = {};
+    barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+    barrier.srcAccessMask = src_access_mask;
+    barrier.dstAccessMask = dst_access_mask;
+    barrier.srcStageMask = src_stage_mask;
+    barrier.dstStageMask = dst_stage_mask;
+    return barrier;
+}
+
 void ez_pipeline_barrier(VkDependencyFlags dependency_flags,
                          size_t buffer_barrier_count, const VkBufferMemoryBarrier2* buffer_barriers,
-                         size_t image_barrier_count, const VkImageMemoryBarrier2* image_barriers)
+                         size_t image_barrier_count, const VkImageMemoryBarrier2* image_barriers,
+                         size_t memory_barrier_count, const VkMemoryBarrier2* memory_barriers)
 {
     VkDependencyInfo dependency_info = {};
     dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
@@ -2250,6 +2508,8 @@ void ez_pipeline_barrier(VkDependencyFlags dependency_flags,
     dependency_info.pBufferMemoryBarriers = buffer_barriers;
     dependency_info.imageMemoryBarrierCount = unsigned(image_barrier_count);
     dependency_info.pImageMemoryBarriers = image_barriers;
+    dependency_info.memoryBarrierCount = unsigned(memory_barrier_count);;
+    dependency_info.pMemoryBarriers = memory_barriers;
 
     vkCmdPipelineBarrier2(ctx.cmd, &dependency_info);
 }

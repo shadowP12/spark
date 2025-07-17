@@ -104,8 +104,23 @@ void ez_flush();
 
 uint32_t ez_get_format_stride(VkFormat format);
 
+// Support features
+enum EzFeature {
+    EZ_FEATURE_NONE         = 0,
+    EZ_FEATURE_RAYTRACING   = 1 << 0,
+};
+EZ_MAKE_ENUM_FLAG(uint32_t, EzFeature)
+
+bool ez_support_feature(EzFeature feature);
+
 // Props
 float ez_get_timestamp_period();
+
+uint32_t ez_get_shader_group_handle_size();
+
+uint32_t ez_get_shader_group_handle_alignment();
+
+uint32_t ez_get_shader_group_base_alignment();
 
 // Swapchain
 struct EzSwapchain_T {
@@ -148,6 +163,7 @@ struct EzBuffer_T {
     VmaAllocation allocation = VK_NULL_HANDLE;
     VkAccessFlags2 access_mask = 0;
     VkPipelineStageFlags2 stage_mask = 0;
+    VkDeviceAddress address = 0;
 };
 VK_DEFINE_HANDLE(EzBuffer)
 
@@ -249,6 +265,59 @@ void ez_create_sampler(const EzSamplerDesc& desc, EzSampler& sampler);
 
 void ez_destroy_sampler(EzSampler sampler);
 
+// AccelerationStructure
+struct EzAccelerationStructureBuildSizes {
+    size_t as_size;
+    size_t update_scratch_size;
+    size_t build_scratch_size;
+};
+
+struct EzAccelerationStructure_T {
+    VkAccelerationStructureKHR handle = VK_NULL_HANDLE;
+    EzBuffer buffer = VK_NULL_HANDLE;
+    EzAccelerationStructureBuildSizes sizes_info{};
+};
+VK_DEFINE_HANDLE(EzAccelerationStructure)
+
+struct EzAccelerationStructureTriangles {
+    VkGeometryFlagsKHR flags;
+    VkFormat vertex_format;
+    uint32_t vertex_count = 0;
+    uint32_t vertex_offset = 0;
+    uint32_t vertex_stride = 0;
+    EzBuffer vertex_buffer = VK_NULL_HANDLE;
+    VkIndexType index_type;
+    uint32_t index_count = 0;
+    uint32_t index_offset = 0;
+    EzBuffer index_buffer = VK_NULL_HANDLE;
+};
+
+struct EzAccelerationStructureInstances {
+    VkGeometryFlagsKHR flags;
+    uint32_t offset = 0;
+    uint32_t count = 0;
+    EzBuffer instance_buffer = VK_NULL_HANDLE;
+};
+
+struct EzAccelerationStructureGeometrySet {
+    std::vector<EzAccelerationStructureTriangles> triangles;
+    std::vector<EzAccelerationStructureInstances> instances;
+};
+
+struct EzAccelerationStructureBuildInfo {
+    VkAccelerationStructureTypeKHR type;
+    VkBuildAccelerationStructureFlagsKHR flags;
+    VkBuildAccelerationStructureModeKHR mode;
+    EzAccelerationStructureGeometrySet geometry_set;
+    EzBuffer scratch_buffer = VK_NULL_HANDLE;
+};
+
+void ez_create_acceleration_structure(const EzAccelerationStructureBuildInfo& build_info, EzAccelerationStructure& as);
+
+void ez_destroy_acceleration_structure(EzAccelerationStructure as);
+
+void ez_build_acceleration_structure(const EzAccelerationStructureBuildInfo& build_info, EzAccelerationStructure as);
+
 // Pipeline
 struct EzShader_T {
     VkShaderModule handle = VK_NULL_HANDLE;
@@ -344,6 +413,8 @@ struct EzPipelineState {
     VkFrontFace front_face = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     VkCullModeFlagBits cull_mode = VK_CULL_MODE_NONE;
 };
+
+void ez_destroy_pipeline(EzPipeline pipeline);
 
 void ez_set_pipeline_state(const EzPipelineState& pipeline_state);
 
@@ -442,6 +513,25 @@ void ez_dispatch(uint32_t thread_group_x, uint32_t thread_group_y, uint32_t thre
 
 void ez_dispatch_indirect(EzBuffer buffer, uint64_t offset);
 
+struct EzRaytracingShderGruop {
+    VkRayTracingShaderGroupTypeKHR type;
+    uint32_t general_shader = VK_SHADER_UNUSED_KHR;
+    uint32_t closesthit_shader = VK_SHADER_UNUSED_KHR;
+    uint32_t anyhit_shader = VK_SHADER_UNUSED_KHR;
+    uint32_t intersection_shader = VK_SHADER_UNUSED_KHR;
+};
+
+struct EzRaytracingPipelineDesc {
+    uint32_t max_trace_recursion_depth = 1;
+    std::vector<EzShader> shaders;
+    std::vector<EzRaytracingShderGruop> groups;
+};
+void ez_create_raytracing_pipeline(const EzRaytracingPipelineDesc& desc, EzPipeline& pipeline);
+
+void ez_bind_raytracing_pipeline(EzPipeline pipeline);
+
+void ez_get_raytracing_group_handle(EzPipeline pipeline, uint32_t first_group, uint32_t group_count, size_t data_size, void* data);
+
 // Barrier
 enum EzResourceState {
     EZ_RESOURCE_STATE_UNDEFINED = 0,
@@ -459,8 +549,7 @@ enum EzResourceState {
     EZ_RESOURCE_STATE_COPY_SOURCE = 0x800,
     EZ_RESOURCE_STATE_GENERIC_READ = (((((0x1 | 0x2) | 0x40) | 0x80) | 0x200) | 0x800),
     EZ_RESOURCE_STATE_PRESENT = 0x1000,
-    EZ_RESOURCE_STATE_COMMON = 0x2000,
-    EZ_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE = 0x4000,
+    EZ_RESOURCE_STATE_COMMON = 0x2000
 };
 EZ_MAKE_ENUM_FLAG(uint32_t, EzResourceState)
 
@@ -470,11 +559,16 @@ VkImageMemoryBarrier2 ez_image_barrier(EzTexture texture, EzResourceState resour
 
 VkBufferMemoryBarrier2 ez_buffer_barrier(EzBuffer buffer, EzResourceState resource_state);
 
+VkMemoryBarrier2 ez_memory_barrier(VkAccessFlags src_access_mask, VkAccessFlags dst_access_mask,
+                                   VkPipelineStageFlags src_stage_mask, VkPipelineStageFlags dst_stage_mask);
+
 void ez_pipeline_barrier(VkDependencyFlags dependency_flags,
-                         size_t buffer_barrier_count,
-                         const VkBufferMemoryBarrier2* buffer_barriers,
-                         size_t image_barrier_count,
-                         const VkImageMemoryBarrier2* image_barriers);
+                         size_t buffer_barrier_count = 0,
+                         const VkBufferMemoryBarrier2* buffer_barriers = nullptr,
+                         size_t image_barrier_count = 0,
+                         const VkImageMemoryBarrier2* image_barriers = nullptr,
+                         size_t memory_barrier_count = 0,
+                         const VkMemoryBarrier2* memory_barriers = nullptr);
 
 struct EzQueryPool_T {
     VkQueryPool handle;

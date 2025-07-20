@@ -1153,12 +1153,13 @@ void ez_destroy_sampler(EzSampler sampler)
 
 // AccelerationStructure
 void fill_acceleration_structure_geometries_info(const EzAccelerationStructureBuildInfo& build_info,
-                                                 std::vector<uint32_t> primitive_counts,
+                                                 std::vector<uint32_t>& primitive_counts,
                                                  std::vector<VkAccelerationStructureGeometryKHR>& geometries,
                                                  std::vector<VkAccelerationStructureBuildRangeInfoKHR>& ranges)
 {
     for(auto& triangles : build_info.geometry_set.triangles)
     {
+        geometries.emplace_back();
         auto& geometry = geometries.back();
         geometry = {};
         geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -1184,6 +1185,7 @@ void fill_acceleration_structure_geometries_info(const EzAccelerationStructureBu
 
     for(auto& instances : build_info.geometry_set.instances)
     {
+        geometries.emplace_back();
         auto& geometry = geometries.back();
         geometry = {};
         geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -1207,6 +1209,8 @@ void fill_acceleration_structure_geometries_info(const EzAccelerationStructureBu
 
 void ez_create_acceleration_structure(const EzAccelerationStructureBuildInfo& build_info, EzAccelerationStructure& as)
 {
+    as = new EzAccelerationStructure_T();
+
     std::vector<uint32_t> primitive_counts;
     std::vector<VkAccelerationStructureGeometryKHR> geometries;
     std::vector<VkAccelerationStructureBuildRangeInfoKHR> ranges;
@@ -1229,12 +1233,12 @@ void ez_create_acceleration_structure(const EzAccelerationStructureBuildInfo& bu
         primitive_counts.data(),
         &sizes_info
     );
-    as->sizes_info.as_size = sizes_info.accelerationStructureSize;
-    as->sizes_info.build_scratch_size = sizes_info.buildScratchSize;
-    as->sizes_info.update_scratch_size = sizes_info.updateScratchSize;
+
+    as->as_size = sizes_info.accelerationStructureSize;
+    as->scratch_size = EZ_MAX(sizes_info.buildScratchSize, sizes_info.updateScratchSize);
 
     EzBufferDesc buffer_desc = {};
-    buffer_desc.size = as->sizes_info.as_size;
+    buffer_desc.size = as->as_size;
     buffer_desc.usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_desc.memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
     ez_create_buffer(buffer_desc, as->buffer);
@@ -1243,7 +1247,7 @@ void ez_create_acceleration_structure(const EzAccelerationStructureBuildInfo& bu
     create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
     create_info.type = vk_build_info.type;
     create_info.buffer = as->buffer->handle;
-    create_info.size = as->sizes_info.as_size;
+    create_info.size = as->as_size;
     VK_ASSERT(vkCreateAccelerationStructureKHR(
         ctx.device,
         &create_info,
@@ -1261,6 +1265,13 @@ void ez_destroy_acceleration_structure(EzAccelerationStructure as)
 
 void ez_build_acceleration_structure(const EzAccelerationStructureBuildInfo& build_info, EzAccelerationStructure as)
 {
+    EzBuffer scratch_buffer;
+    EzBufferDesc buffer_desc = {};
+    buffer_desc.size = as->scratch_size;
+    buffer_desc.usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_desc.memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    ez_create_buffer(buffer_desc, scratch_buffer);
+
     std::vector<uint32_t> primitive_counts;
     std::vector<VkAccelerationStructureGeometryKHR> geometries;
     std::vector<VkAccelerationStructureBuildRangeInfoKHR> ranges;
@@ -1275,7 +1286,7 @@ void ez_build_acceleration_structure(const EzAccelerationStructureBuildInfo& bui
     vk_build_info.pGeometries = geometries.data();
     vk_build_info.srcAccelerationStructure = as->handle;
     vk_build_info.dstAccelerationStructure = as->handle;
-    vk_build_info.scratchData.deviceAddress = build_info.scratch_buffer->address;
+    vk_build_info.scratchData.deviceAddress = scratch_buffer->address;
 
     VkAccelerationStructureBuildRangeInfoKHR* p_range_info = ranges.data();
     vkCmdBuildAccelerationStructuresKHR(
@@ -1284,6 +1295,8 @@ void ez_build_acceleration_structure(const EzAccelerationStructureBuildInfo& bui
         &vk_build_info,
         &p_range_info
     );
+
+    ez_destroy_buffer(scratch_buffer);
 }
 
 // Pipeline
@@ -2232,6 +2245,37 @@ void ez_bind_raytracing_pipeline(EzPipeline pipeline)
 void ez_get_raytracing_group_handle(EzPipeline pipeline, uint32_t first_group, uint32_t group_count, size_t data_size, void* data)
 {
     vkGetRayTracingShaderGroupHandlesKHR(ctx.device, pipeline->handle, first_group, group_count, data_size, data);
+}
+
+void ez_trace_rays(VkStridedDeviceAddressRegionKHR* raygen,
+                   VkStridedDeviceAddressRegionKHR* miss,
+                   VkStridedDeviceAddressRegionKHR* hit,
+                   VkStridedDeviceAddressRegionKHR* callable,
+                   uint32_t width, uint32_t height, uint32_t depth)
+{
+    flush_binding_table();
+
+    if (binding_table.pushconstants_size > 0)
+    {
+        binding_table.pushconstants_size = 0;
+        vkCmdPushConstants(ctx.cmd,
+                           ctx.pipeline->pipeline_layout,
+                           ctx.pipeline->pushconstants.stageFlags,
+                           0,
+                           ctx.pipeline->pushconstants.size,
+                           binding_table.pushconstants_data);
+    }
+
+    vkCmdTraceRaysKHR(
+        ctx.cmd,
+        raygen,
+        miss,
+        hit,
+        callable,
+        width,
+        height,
+        depth
+    );
 }
 
 // Barrier

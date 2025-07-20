@@ -266,16 +266,11 @@ void ez_create_sampler(const EzSamplerDesc& desc, EzSampler& sampler);
 void ez_destroy_sampler(EzSampler sampler);
 
 // AccelerationStructure
-struct EzAccelerationStructureBuildSizes {
-    size_t as_size;
-    size_t update_scratch_size;
-    size_t build_scratch_size;
-};
-
 struct EzAccelerationStructure_T {
     VkAccelerationStructureKHR handle = VK_NULL_HANDLE;
     EzBuffer buffer = VK_NULL_HANDLE;
-    EzAccelerationStructureBuildSizes sizes_info{};
+    size_t as_size;
+    size_t scratch_size;
 };
 VK_DEFINE_HANDLE(EzAccelerationStructure)
 
@@ -309,7 +304,6 @@ struct EzAccelerationStructureBuildInfo {
     VkBuildAccelerationStructureFlagsKHR flags;
     VkBuildAccelerationStructureModeKHR mode;
     EzAccelerationStructureGeometrySet geometry_set;
-    EzBuffer scratch_buffer = VK_NULL_HANDLE;
 };
 
 void ez_create_acceleration_structure(const EzAccelerationStructureBuildInfo& build_info, EzAccelerationStructure& as);
@@ -531,6 +525,12 @@ void ez_create_raytracing_pipeline(const EzRaytracingPipelineDesc& desc, EzPipel
 void ez_bind_raytracing_pipeline(EzPipeline pipeline);
 
 void ez_get_raytracing_group_handle(EzPipeline pipeline, uint32_t first_group, uint32_t group_count, size_t data_size, void* data);
+
+void ez_trace_rays(VkStridedDeviceAddressRegionKHR* raygen,
+                   VkStridedDeviceAddressRegionKHR* miss,
+                   VkStridedDeviceAddressRegionKHR* hit,
+                   VkStridedDeviceAddressRegionKHR* callable,
+                   uint32_t width, uint32_t height, uint32_t depth);
 
 // Barrier
 enum EzResourceState {
